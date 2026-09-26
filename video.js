@@ -46,8 +46,12 @@
       return out;
     }
     for (const ch of text) {
-      if (cur && g.measureText(cur + ch).width > maxW && !NO_LINE_START.includes(ch)) { out.push(cur); cur = ch; }
-      else cur += ch;
+      if (cur && g.measureText(cur + ch).width > maxW && !NO_LINE_START.includes(ch)) {
+        // 行末の数字・英字のかたまり（「1行」の「1」など）は途中で切らず、次の行へ送る
+        const m = cur.match(/[0-9A-Za-z０-９Ａ-Ｚａ-ｚ.,%]+$/);
+        if (m && m[0].length < cur.length) { out.push(cur.slice(0, -m[0].length)); cur = m[0] + ch; }
+        else { out.push(cur); cur = ch; }
+      } else cur += ch;
     }
     if (cur) out.push(cur);
     return out;
@@ -153,7 +157,7 @@
       const lastY = y + (f.lines.length - 1) * f.size * 1.25;
       g.fillStyle = C.blue;
       const bw = 90 * s;
-      g.fillRect(portrait ? W / 2 - bw / 2 : M, lastY + 22 * s, bw, 8 * s);
+      g.fillRect(portrait ? W / 2 - bw / 2 : M, lastY + (portrait ? 40 : 22) * s, bw, 8 * s); // 縦長は中央寄せなので、文字の一部に見えないよう離す
     }
 
     // 波形（中央から外へ広がる棒＋うっすら同心円）
@@ -225,6 +229,22 @@
     const by = H - (portrait ? 90 : 56) * s, bx = M, bwid = W - 2 * M, bh = 6 * s;
     g.fillStyle = C.line; rrect(g, bx, by, bwid, bh, bh / 2); g.fill();
     g.fillStyle = C.blue; rrect(g, bx, by, Math.max(bh, bwid * Math.min(1, t / v.dur)), bh, bh / 2); g.fill();
+
+    // 透かし（縁に半透明で。転載されても出どころが分かるように）
+    const wm = (v.wm || '').trim();
+    if (wm) {
+      const fs = (portrait ? 30 : 28) * s, pad = (portrait ? 40 : 34) * s, pos = v.wmPos || 'br';
+      g.font = `700 ${fs}px ${FONT}`;
+      g.textBaseline = 'alphabetic';
+      g.textAlign = pos === 'bc' ? 'center' : pos.endsWith('r') ? 'right' : 'left';
+      const x = pos === 'bc' ? W / 2 : pos.endsWith('r') ? W - pad : pad;
+      const y = pos.startsWith('t') ? pad + fs * 0.8 : by - 18 * s; // 下は進み具合の線の少し上
+      g.globalAlpha = 0.55;
+      g.lineWidth = 4 * s; g.strokeStyle = C.bg; g.lineJoin = 'round';
+      g.strokeText(wm, x, y); // 背景に溶けないよう、地色で縁取り
+      g.fillStyle = C.ink; g.fillText(wm, x, y);
+      g.globalAlpha = 1;
+    }
   }
 
   /** 動画に必要な情報をまとめる */
@@ -233,6 +253,7 @@
     return {
       lines: tts.lines, segs: tts.segs, multi: tts.multi, speakers: tts.speakers,
       title: opts.title || '', tag: opts.tag || '', showSub: opts.showSub !== false, showAi: opts.showAi !== false,
+      wm: opts.wm || '', wmPos: opts.wmPos || 'br',
       lang: tts.lang || 'ja',
       aiLabel: { en: 'AI voice', zh: 'AI语音' }[tts.lang] || 'AI音声',
       env: e.env, hop: e.hop, dur: tts.data.length / tts.sr,
@@ -249,7 +270,7 @@
 
   async function loadFonts(v) {
     if (!document.fonts || !document.fonts.load) return;
-    const text = [v.title, v.tag, v.aiLabel || 'AI音声', ...v.speakers, ...v.lines.map((l) => l.text + l.dir)].join('');
+    const text = [v.title, v.tag, v.wm || '', v.aiLabel || 'AI音声', ...v.speakers, ...v.lines.map((l) => l.text + l.dir)].join('');
     try {
       const family = v.lang === 'zh' ? 'Noto Sans SC' : 'Noto Sans JP';
       await Promise.all([900, 700].map((w) => document.fonts.load(`${w} 40px "${family}"`, text || 'あ')));

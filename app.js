@@ -994,11 +994,27 @@
     { sp: 1, dir: '忍着笑', text: '……那今后打算怎么处理？' },
     { sp: 0, dir: '深深鞠躬', text: '明天，我会买三个同样的布丁还回去。其中一个，送给各位记者。' },
   ];
+  const PROMO_JA = [
+    { sp: 0, dir: '元気よく、CM風に', text: 'どうも！ 台本を渡されると、何でも演じる声のAIです。' },
+    { sp: 1, dir: '小声で', text: '……ちょっと、まだ本番じゃないよ。' },
+    { sp: 0, dir: '急に真面目に', text: '失礼しました。こちら、こえラボ。1行ずつ、演技を指示できるアプリです。' },
+    { sp: 1, dir: '自慢げに', text: 'ささやく、ため息、笑いをこらえる……全部、文章で指示できるんだ。' },
+    { sp: 0, dir: 'ため息まじりに', text: 'おかげで私、今日だけで三回も謝罪会見をしました。' },
+    { sp: 1, dir: '笑いをこらえながら', text: 'プリンの件ね。' },
+    { sp: 0, dir: 'ささやくように', text: 'しかも、二人の掛け合いも一回で作れるんです。つまり……' },
+    { sp: 1, dir: '驚いて', text: 'つまり？' },
+    { sp: 0, dir: '間をたっぷり取って', text: '……相方も、私です。' },
+    { sp: 1, dir: 'あきれて', text: 'それは言わなくていいから！' },
+    { sp: 0, dir: '深々と頭を下げるように', text: '字幕つきの動画にもできます。日本語、英語、中国語にも対応しております。' },
+    { sp: 1, dir: '早口で', text: 'ブラウザだけで動いて、APIキーは各自でね！' },
+    { sp: 0, dir: '元気よく、CM風に', text: 'こえラボ。あなたの台本、演じます。リンクは投稿の下に！' },
+  ];
   const SAMPLES = {
     ja: [
       { title: 'ナレーション', note: '1人・3行', mode: 1, personas: ['落ち着いた40代の女性ナレーター'], lines: SAMPLE1 },
       { title: '日常の掛け合い', note: '2人・4行', mode: 2, personas: ['落ち着いた30代の女性。やわらかく話す', '明るく人なつっこい20代の男性'], lines: SAMPLE2 },
       { title: '謝罪会見（プリンの件）', note: '2人・13行・名前を「自分／記者」にします', mode: 2, names: ['自分', '記者'], personas: ['', 'ワイドショーの記者。早口で詰め寄る'], style: 'テレビの謝罪会見。張りつめた空気だが、どこか間が抜けている', lines: APOLOGY_JA },
+      { title: '宣伝：こえラボ紹介', note: '2人・13行・名前を「AI／開発者」、動画のタイトルとラベルも入れます', mode: 2, names: ['AI', '開発者'], personas: ['テンション高めの声のAI。CMのナレーター風', '落ち着いた若い男性の開発者。ツッコミ役'], style: 'テンポのよいコント仕立てのCM', video: { title: '台本を書くと、AIが演じる。こえラボ', tag: 'こえラボ' }, lines: PROMO_JA },
     ],
     en: [
       { title: 'Narration', note: '1人・3行', mode: 1, personas: ['a calm, warm narrator'], lines: SAMPLE1_EN },
@@ -1061,10 +1077,10 @@
     ['話し方・場面', ['语速很快地逼问', '严厉地', '冷静地', '找借口似的', '深深鞠躬', '温暖亲切地', '像新闻主播一样', '像体育解说一样']],
   ];
   const DIRECTIONS = [
-    ['気持ち', ['深刻に', '申し訳なさそうに', '声を震わせて', '驚いて', '怒って', 'あきれて', '悲しげに', '照れながら', '元気よく', '急に明るく', '笑いながら', '笑いをこらえながら', 'ため息まじりに', '眠そうに']],
+    ['気持ち', ['深刻に', '急に真面目に', '自慢げに', '申し訳なさそうに', '声を震わせて', '驚いて', '怒って', 'あきれて', '悲しげに', '照れながら', '元気よく', '急に明るく', '笑いながら', '笑いをこらえながら', 'ため息まじりに', '眠そうに']],
     ['速さ・間', ['ゆっくり落ち着いて', '深刻に、ゆっくり', '早口で', 'たたみかけるように', '間をたっぷり取って', '言いよどみながら']],
     ['声の大きさ', ['ささやくように', '小声で', '小声で、言い訳がましく', '大きな声で', '叫ぶように']],
-    ['話し方・場面', ['早口で詰め寄る', '厳しく', '冷静に', '言い訳がましく', '深々と頭を下げるように', 'やさしく語りかけるように', 'ニュースキャスター風に', '実況中継のように']],
+    ['話し方・場面', ['元気よく、CM風に', '早口で詰め寄る', '厳しく', '冷静に', '言い訳がましく', '深々と頭を下げるように', 'やさしく語りかけるように', 'ニュースキャスター風に', '実況中継のように']],
   ];
   const sug = document.createElement('div');
   sug.className = 'suggest hidden'; sug.setAttribute('role', 'listbox');
@@ -1217,6 +1233,7 @@
       // 人物像もその言語のものにする（自分の声の話者は空欄のまま）
       if (smp.personas) smp.personas.forEach((d, k) => { T.speakers[k].desc = isMyVoice(T.speakers[k].voice) ? '' : d; });
       T.style = smp.style || ''; $('ttsStyle').value = T.style; paintStyleHint(); // 見本を選んだら雰囲気もその見本のものにする
+      if (smp.video) { Object.assign(T.video, smp.video); syncVideoUi(); vState = null; }
       saveT(); renderMode(); hideSampleMenu();
     });
   };
@@ -1700,9 +1717,9 @@
   syncMyVoices();
 
   // ================= 解説動画 =================
-  T.video = { orient: 'h', title: '', tag: 'AIボイス', sub: true, ai: true, ...(T.video || {}) };
+  T.video = { orient: 'h', title: '', tag: 'AIボイス', sub: true, ai: true, wm: '', wmPos: 'br', ...(T.video || {}) };
   let vState = null;
-  const vOpts = () => ({ title: T.video.title, tag: T.video.tag, showSub: T.video.sub, showAi: T.video.ai });
+  const vOpts = () => ({ title: T.video.title, tag: T.video.tag, showSub: T.video.sub, showAi: T.video.ai, wm: T.video.wm, wmPos: T.video.wmPos });
   const vSize = () => (T.video.orient === 'v' ? [1080, 1920] : [1920, 1080]);
   function drawPreview(t) {
     if (!S.tts || !S.tts.segs) return;
@@ -1720,6 +1737,7 @@
     $('vPreviewWrap').classList.toggle('portrait', T.video.orient === 'v');
     $('vTitle').value = T.video.title; $('vTag').value = T.video.tag;
     $('vSub').checked = T.video.sub; $('vAi').checked = T.video.ai;
+    $('vWm').value = T.video.wm || ''; $('vWmPos').value = T.video.wmPos || 'br';
   }
   const onVideoOpt = () => { vState = null; saveT(); drawPreview(); };
   document.querySelectorAll('[data-orient]').forEach((b) => b.onclick = () => { T.video.orient = b.dataset.orient; syncVideoUi(); onVideoOpt(); });
@@ -1727,6 +1745,8 @@
   $('vTag').oninput = (e) => { T.video.tag = e.target.value; onVideoOpt(); };
   $('vSub').onchange = (e) => { T.video.sub = e.target.checked; onVideoOpt(); };
   $('vAi').onchange = (e) => { T.video.ai = e.target.checked; onVideoOpt(); };
+  $('vWm').oninput = (e) => { T.video.wm = e.target.value; onVideoOpt(); };
+  $('vWmPos').onchange = (e) => { T.video.wmPos = e.target.value; onVideoOpt(); };
   syncVideoUi();
 
   $('vMake').onclick = async () => {

@@ -215,6 +215,7 @@
   .vm-preview canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
   .vm-preview.portrait canvas { width: auto; height: 460px; max-width: 100%; aspect-ratio: 9 / 16; }
   .vm-controls { display: grid; gap: 12px; }
+  .vm-wm { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
   .vm-controls .check { margin-bottom: 0; }
 
   .suggest { position: absolute; z-index: 60; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(29,29,41,.14); max-height: 260px; overflow: auto; padding: 4px; }
@@ -541,6 +542,12 @@
             <label class="field"><span>ラベル（左上の青い札）</span><input type="text" id="vTag" value="AIボイス"></label>
             <label class="check"><input type="checkbox" id="vSub" checked><span>字幕を出す<span class="hint" id="vTiming">行の切り替えは、声の「間」から自動で合わせます</span></span></label>
             <label class="check"><input type="checkbox" id="vAi" checked><span>「AI音声」と表示する<span class="hint">AIで作った声だと見る人に伝わります</span></span></label>
+            <div class="vm-wm">
+              <label class="field"><span>透かし（任意）</span><input type="text" id="vWm" placeholder="例：@your_account" autocomplete="off"></label>
+              <label class="field"><span>位置</span>
+                <select id="vWmPos"><option value="br">右下</option><option value="bl">左下</option><option value="tr">右上</option><option value="tl">左上</option><option value="bc">下の中央</option></select>
+              </label>
+            </div>
             <button class="btn big" id="vMake">動画を作って保存</button>
             <div class="progress hidden" id="vProg"><i></i></div>
             <div class="status" id="vStatus"></div>
@@ -571,8 +578,8 @@
   </form>
 </dialog>
 
-<script src="dsp.js?v=20260927b"></script>
-<script src="video.js?v=20260927b"></script>
-<script src="app.js?v=20260927b"></script>
+<script src="dsp.js?v=20260927d"></script>
+<script src="video.js?v=20260927d"></script>
+<script src="app.js?v=20260927d"></script>
 </body>
 </html>
