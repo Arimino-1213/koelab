@@ -1,0 +1,112 @@
+こえラボ（koelab）利用条件
+
+Copyright (c) 2026 Arimino-1213. All rights reserved.
+
+制定日：2026年9月27日
+
+（日本語版が正本です。英語版は参考訳で、両者に相違がある場合は日本語版が優先します。）
+
+────────────────────────────────────────
+
+第1条（対象と権利の帰属）
+1. この利用条件は、GitHub リポジトリ Arimino-1213/koelab に含まれるソースコード、文書、画像その他一切のもの（以下「本ソフトウェア等」という。）と、公開 URL（https://arimino-1213.github.io/koelab/）で提供するアプリケーション（以下「本アプリ」という。）の利用について定めるものとする。
+2. 本ソフトウェア等の著作権その他一切の権利は、作者（GitHub アカウント Arimino-1213。以下「作者」という。）に帰属する。この利用条件は、第2条に定める範囲を除き、本ソフトウェア等についていかなる権利も許諾するものではない。
+
+第2条（許可する利用）
+次の利用は、作者の許可なく行うことができる。
+(1) GitHub 上で本ソフトウェア等を閲覧すること。
+(2) GitHub 利用規約（GitHub Terms of Service D.5）に基づき、GitHub の機能の範囲内で本ソフトウェア等をフォークすること。ただし、フォークによって、この利用条件に定める以外の権利が許諾されるものではなく、フォークしたリポジトリから本アプリを公開すること（GitHub Pages による公開を含む。）は、第3条第3号の公開に当たるものとする。
+(3) 個人が、公開 URL にアクセスして本アプリを利用すること（利用に伴って本ソフトウェア等が利用者のブラウザに読み込まれることを含む。）。
+(4) 著作権法第30条（私的使用のための複製）その他の法令により、権利者の許諾なく行うことが認められている利用。
+
+第3条（禁止事項）
+作者の事前の許可（書面又は電子メール等の電磁的方法によるものに限る。）なく、次の行為をしてはならない。
+(1) 本ソフトウェア等の全部又は一部を複製すること（第2条で認めるものを除く。）。
+(2) 本ソフトウェア等を改変し、翻案し、又は他のソフトウェア若しくはサービスに組み込み若しくは流用すること。
+(3) 本ソフトウェア等（改変したものを含む。）を再配布し、販売し、貸与し、又は他のウェブサイト若しくはサーバーで公開すること。
+(4) 本ソフトウェア等（改変したものを含む。）を用いて商用のサービスを提供することその他の商用利用。
+(5) 本ソフトウェア等に含まれる著作権表示又はこの利用条件を削除し、又は改変すること。
+(6) 本アプリを利用して、法令、公序良俗又は Google その他の第三者の定める規約に違反し、又は第三者の権利若しくは利益を侵害すること。
+
+第4条（第三者の部品）
+1. 本アプリは、実行時に次の第三者の部品を各配布元から読み込む。これらの部品は本ソフトウェア等に含まれず、それぞれの権利者が定めるライセンスに従うものとする。
+   ・mp4-muxer（MIT License）
+   ・lamejs（GNU Lesser General Public License v3.0）
+   ・Noto Sans JP / Noto Sans SC（SIL Open Font License 1.1）
+2. この利用条件は、前項の部品のライセンスが利用者に認める権利（部品の改変や差し替え、そのために必要な解析を含む。）を制限するものではない。
+
+第5条（外部サービスと声の再現）
+1. 本アプリの AI 機能（文字起こし、読み上げ、声の再現その他）は、利用者が自ら取得した Google Gemini API キーを用いて、利用者と Google との間で利用されるものとする。利用者は、Gemini API 追加利用規約（https://ai.google.dev/gemini-api/terms）、生成 AI の使用禁止に関するポリシー（https://policies.google.com/terms/generative-ai/use-policy）その他 Google の定める規約に従うものとし、料金、利用上限及び送信したデータの取扱いは Google の定めるところによる。
+2. 声の再現機能は、声の持ち主本人の同意を前提とする。利用者は、本人の同意なく他人の声を登録すること、登録した声を用いて本人になりすますこと、本人が述べていない内容を本人の発言として公表することその他本人又は第三者の権利若しくは利益を害する行為をしてはならない。
+3. 利用者が本アプリを利用して作成した音声、動画その他の成果物について、作者は権利を主張しない。成果物の利用は、利用者の責任において行うものとする。
+
+第6条（無保証）
+本ソフトウェア等及び本アプリは現状のまま提供されるものとし、作者は、その正確性、完全性、特定の目的への適合性、動作の継続その他について、いかなる保証もしない。作者は、予告なく本アプリの内容を変更し、又は公開を停止することができる。
+
+第7条（責任の制限）
+1. 作者は、本ソフトウェア等又は本アプリに関連して利用者に生じた損害について、作者の故意又は重大な過失による場合を除き、賠償の責任を負わない。
+2. 前項の規定は、利用者と作者との間の関係が消費者契約法第2条第3項に定める消費者契約に該当する場合には適用しない。この場合において、作者の軽過失（故意又は重大な過失を除く過失をいう。）による債務不履行又は不法行為により利用者に生じた損害について作者が負う賠償の責任は、利用者に現実に生じた直接かつ通常の損害に限るものとする。
+
+第8条（許可の申請）
+第3条に定める行為の許可を希望する場合は、GitHub リポジトリの Issues 又は作者の GitHub プロフィールに記載の連絡先から作者に連絡するものとする。
+
+第9条（準拠法）
+この利用条件は、日本法に準拠し、日本法に従って解釈されるものとする。
+
+
+════════════════════════════════════════
+English (reference translation)
+════════════════════════════════════════
+
+koelab — Terms of Use
+
+Copyright (c) 2026 Arimino-1213. All rights reserved.
+
+Effective: September 27, 2026
+
+(The Japanese version above is the authoritative text. This English version is a reference translation; in case of any discrepancy, the Japanese version prevails.)
+
+1. Scope and ownership
+   1.1 These terms govern the use of the source code, documents, images and all other materials in the GitHub repository Arimino-1213/koelab (the "Software") and of the application provided at https://arimino-1213.github.io/koelab/ (the "App").
+   1.2 All copyright and other rights in the Software belong to the author (GitHub account Arimino-1213, the "Author"). Except as set out in Section 2, no rights in the Software are granted.
+
+2. Permitted uses
+   You may, without permission from the Author:
+   (1) view the Software on GitHub;
+   (2) fork the Software within GitHub's functionality, as provided in the GitHub Terms of Service (Section D.5); forking grants no rights beyond those in these terms, and publishing the App from a forked repository (including via GitHub Pages) constitutes publishing under Section 3(3);
+   (3) use the App as an individual by accessing the public URL (including the Software being loaded into your browser as part of that use); and
+   (4) make any use permitted by law without the right holder's consent, such as reproduction for private use under Article 30 of the Japanese Copyright Act.
+
+3. Prohibited acts
+   Without the Author's prior permission (in writing or by electronic means such as email), you must not:
+   (1) reproduce all or part of the Software (except as permitted in Section 2);
+   (2) modify or adapt the Software, or incorporate or reuse it in other software or services;
+   (3) redistribute, sell, lend, or publish the Software (including modified versions) on any other website or server;
+   (4) use the Software (including modified versions) to provide a commercial service or for any other commercial purpose;
+   (5) remove or alter any copyright notice or these terms; or
+   (6) use the App in violation of laws, public order and morals, or the terms of Google or any other third party, or in a way that infringes the rights or interests of others.
+
+4. Third-party components
+   4.1 At runtime, the App loads the following third-party components from their distributors. They are not part of the Software and remain subject to their own licenses:
+       - mp4-muxer (MIT License)
+       - lamejs (GNU Lesser General Public License v3.0)
+       - Noto Sans JP / Noto Sans SC (SIL Open Font License 1.1)
+   4.2 These terms do not restrict any rights granted to you by the licenses of those components (including modifying or replacing them and any analysis needed to do so).
+
+5. External services and voice replication
+   5.1 The App's AI features (transcription, text-to-speech, voice replication, etc.) are used between you and Google with a Google Gemini API key that you obtain yourself. You must comply with the Gemini API Additional Terms of Service (https://ai.google.dev/gemini-api/terms), the Generative AI Prohibited Use Policy (https://policies.google.com/terms/generative-ai/use-policy) and any other Google terms. Fees, usage limits and the handling of data you send are governed by Google.
+   5.2 Voice replication requires the consent of the person whose voice it is. You must not register another person's voice without their consent, impersonate a person with a registered voice, publish statements the person did not make as if they were the person's own, or otherwise harm the rights or interests of that person or any third party.
+   5.3 The Author claims no rights in the audio, video or other output you create with the App. You use such output at your own responsibility.
+
+6. No warranty
+   The Software and the App are provided "as is". The Author makes no warranty of any kind, including accuracy, completeness, fitness for a particular purpose, or continued availability. The Author may change the App or stop providing it at any time without notice.
+
+7. Limitation of liability
+   7.1 The Author is not liable for any damage arising in connection with the Software or the App, except in the case of the Author's willful misconduct or gross negligence.
+   7.2 Section 7.1 does not apply if the relationship between you and the Author constitutes a consumer contract as defined in Article 2(3) of the Japanese Consumer Contract Act. In that case, the Author's liability for damage caused by the Author's ordinary negligence (negligence other than willful misconduct or gross negligence), whether in contract or in tort, is limited to direct and ordinary damage actually incurred by you.
+
+8. Requests for permission
+   To request permission for any act listed in Section 3, contact the Author via the repository's Issues or the contact information on the Author's GitHub profile.
+
+9. Governing law
+   These terms are governed by and construed in accordance with the laws of Japan.

@@ -52,3 +52,7 @@
 - `index.html` 画面 / `app.js` 画面の動き / `dsp.js` 音声処理（外部ライブラリなし）/ `video.js` 解説動画の描画と mp4 書き出し（mp4-muxer を jsdelivr から読み込む）
 - `tests/dsp.test.js` 音声処理のテスト（`node tests/dsp.test.js`）
 - `tests/samples/` 検証用の音声・動画（Windows読み上げ Haruka で作成）
+
+## 利用条件（ライセンス）
+Copyright (c) 2026 Arimino-1213. All rights reserved.
+ソースコードの閲覧と、公開 URL（https://arimino-1213.github.io/koelab/）でのアプリの利用はできますが、作者の許可なく複製・改変・再配布・他サイトでの公開・商用利用をすることはできません。詳しくは [LICENSE](LICENSE) を見てください（日本語が正本、英語は参考訳）。
