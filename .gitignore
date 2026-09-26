@@ -1,0 +1,15 @@
+# 音声・動画はリポジトリに入れない（検証用の素材も含めてパソコンの中だけに置く）
+tests/samples/
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.webm
+*.mp4
+*.mov
+
+# OS・エディタが作るファイル
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/

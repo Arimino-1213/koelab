@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>こえラボ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBF5E6;
+    --card: #FFFDF6;
+    --ink: #1D1D29;
+    --muted: #6E6B60;
+    --line: #E8DFC8;
+    --blue: #2433E0;
+    --blue-2: #5B67EA;
+    --blue-soft: #E7E9FC;
+    --red: #E0413A;
+    --amber: #C77A00;
+    --green: #1E8A55;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(rgba(36, 51, 224, .045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36, 51, 224, .045) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Noto Sans SC", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 80px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .hidden { display: none !important; }
+
+  /* ヘッダー */
+  header { display: flex; align-items: center; gap: 18px; padding: 22px 0 14px; flex-wrap: wrap; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 24px; letter-spacing: .02em; }
+  .logo svg { display: block; }
+  .tagline { color: var(--muted); font-size: 13px; }
+  nav.tabs { margin-left: auto; display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+  nav.tabs button { border: 0; background: transparent; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--muted); }
+  nav.tabs button[aria-selected="true"] { background: var(--blue); color: #fff; }
+  .icon-btn { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 14px; font-weight: 700; }
+
+  /* セクション */
+  section.step { margin-top: 26px; }
+  .step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .pill .dots { display: inline-flex; gap: 3px; }
+  .pill .dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.4); }
+  .pill .dots i.on { background: #fff; }
+  h2 { font-size: 24px; font-weight: 900; margin: 0; position: relative; }
+  h2 .u { background: linear-gradient(transparent 82%, var(--blue) 82%, var(--blue) 92%, transparent 92%); }
+  .lead { color: var(--muted); font-size: 13px; margin: 0; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .card-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+  .card-title .ic { width: 26px; height: 26px; border-radius: 8px; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-size: 14px; }
+  .card-title .right { margin-left: auto; font-weight: 500; color: var(--muted); font-size: 12px; }
+
+  /* ドロップ */
+  .drop {
+    border: 2px dashed rgba(36, 51, 224, .35); border-radius: 20px; background: rgba(255, 253, 246, .85);
+    padding: 44px 20px 36px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  .drop:hover, .drop.over { background: var(--blue-soft); border-color: var(--blue); }
+  .drop .dots-line { display: flex; justify-content: center; gap: 7px; margin: 0 auto 22px; max-width: 420px; }
+  .drop .dots-line i { width: 7px; height: 7px; border-radius: 2px; background: var(--blue); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(3.4); } }
+  .drop strong { display: block; font-size: 20px; font-weight: 900; }
+  .drop .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .drop .btn { margin-top: 16px; }
+
+  .filebar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .filebar .name { font-weight: 700; word-break: break-all; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: var(--blue-soft); color: var(--blue); }
+  .filebar .meta { color: var(--muted); font-size: 13px; }
+  .filebar .spacer { flex: 1; }
+  video.preview { width: 240px; max-width: 100%; border-radius: 10px; background: #000; display: block; }
+
+  /* ボタン */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer; background: var(--blue); color: #fff; font-size: 14px; }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+  .btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--blue); color: var(--blue); }
+  .btn.big { padding: 13px 26px; font-size: 16px; border-radius: 12px; }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  /* 波形 */
+  .wave-wrap { position: relative; }
+  canvas.wave { width: 100%; height: 132px; display: block; cursor: crosshair; touch-action: none; }
+  .wave-foot { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+  /* 数値カード */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .stat .k { font-size: 12px; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .stat .v { font-size: 34px; font-weight: 900; color: var(--blue); line-height: 1.2; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .stat .v small { font-size: 15px; font-weight: 700; color: var(--blue-2); margin-left: 3px; }
+  .stat .d { font-size: 12px; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  canvas.chart { width: 100%; height: 150px; display: block; }
+
+  /* 診断 */
+  ul.diag { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.diag li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+  ul.diag .mk { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff; margin-top: 1px; }
+  ul.diag .warn .mk { background: var(--amber); }
+  ul.diag .info .mk { background: var(--blue-2); }
+  ul.diag .ok .mk { background: var(--green); }
+
+  /* AI結果 */
+  .ai-out { margin-top: 12px; display: grid; gap: 12px; }
+  .ai-out .transcript { background: var(--bg); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; font-size: 14px; max-height: 260px; overflow: auto; }
+  .ai-out h4 { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+  .ai-out ol { margin: 0; padding-left: 20px; }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 14px; }
+  .kv dt { color: var(--muted); font-weight: 700; }
+  .kv dd { margin: 0; }
+
+  /* 変換 */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 700; font-size: 13px; }
+  .chip:hover { border-color: var(--blue); color: var(--blue); }
+  .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .ctl { display: grid; gap: 4px; margin-bottom: 10px; }
+  .ctl:last-child { margin-bottom: 0; }
+  .ctl label { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .ctl label output { color: var(--blue); font-variant-numeric: tabular-nums; }
+  .ctl .hint { font-size: 11px; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--blue); }
+  .check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 10px; cursor: pointer; }
+  .check input { accent-color: var(--blue); width: 16px; height: 16px; margin-top: 3px; }
+  .check .hint { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  select, input[type=text], input[type=password], textarea {
+    border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 10px; width: 100%;
+  }
+  select:focus, input:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: 0; border-color: var(--blue); }
+
+  .progress { height: 6px; background: var(--blue-soft); border-radius: 99px; overflow: hidden; margin-top: 12px; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--blue); transition: width .15s; }
+  .status { font-size: 13px; color: var(--muted); margin-top: 6px; min-height: 1.5em; }
+  .status.err { color: var(--red); font-weight: 700; }
+
+  .compare { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+  .compare .stat .v { font-size: 22px; }
+  .compare .arrow { color: var(--muted); font-size: 12px; }
+
+  /* 台本 */
+  /* 台本（配役 → 台本 → 生成 を1枚のカードで上から順に） */
+  /* 中文の台本は簡体字の字形で表示する（日本語フォントだと日中共通の漢字が日本の字形になる） */
+  .tts-card:lang(zh) input, .tts-card:lang(zh) textarea, .tts-card:lang(zh) select, .suggest:lang(zh) button { font-family: "Noto Sans SC", "Noto Sans JP", system-ui, sans-serif; }
+  #styleHint { font-size: 11px; color: var(--muted); margin: 2px 0 0; min-height: 0; }
+  #styleHint.warn { color: var(--amber); font-weight: 700; }
+  #styleHint:empty { display: none; }
+  .tts-switches { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .sample-menu button small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  .cast-label { font-size: 12px; color: var(--muted); font-weight: 700; margin: 4px 0 6px; }
+  .cast { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+  .cast.one { grid-template-columns: minmax(0, 1fr); }
+  .cast-card { --c: var(--blue); background: var(--bg); border: 1px solid var(--line); border-left: 5px solid var(--c); border-radius: 12px; padding: 10px 14px 12px; display: grid; grid-template-columns: 150px 1fr 1.4fr; gap: 6px 12px; align-items: end; }
+  .cast-card .who { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 15px; min-height: 36px; }
+  .cast-card .who .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+  .cast-card .who input { border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; background: transparent; font-weight: 900; font-size: 15px; padding: 4px 2px; width: 100%; }
+  .cast-card .who input:focus { outline: 0; border-bottom-color: var(--c); }
+  .cast-card .hint { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin: 0; }
+  .cast-card .hint.warn { color: var(--amber); font-weight: 700; }
+  .linkbtn { border: 0; background: none; padding: 0 2px; color: var(--blue); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+  .cast:not(.one) .cast-card { grid-template-columns: 1fr 1fr; }
+  .cast:not(.one) .cast-card .who { grid-column: 1 / -1; }
+  .cast:not(.one) .cast-card .hint { grid-column: 1 / -1; }
+  .tts-foot { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; align-items: end; }
+  .tts-foot .progress, .tts-foot .status { grid-column: 1 / -1; margin-top: 0; }
+  .tts-foot .status:empty { display: none; }
+  .script-head, .line { display: grid; grid-template-columns: 26px 120px 210px 1fr 28px; gap: 8px; align-items: center; }
+  .script.one .script-head, .script.one .line { grid-template-columns: 26px 210px 1fr 28px; }
+  .script.one .sp-col { display: none; }
+  .line select[data-k=sp] { border-left: 5px solid var(--c, var(--line)); font-weight: 700; }
+  .script-head { font-size: 12px; color: var(--muted); font-weight: 700; padding: 0 2px 6px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .script-head .dir { color: var(--blue); }
+  .line { padding: 4px 2px; }
+  .line .no { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  .line textarea { resize: none; min-height: 36px; line-height: 1.5; field-sizing: content; overflow: hidden; }
+  .line .del { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; }
+  .line .del:hover { color: var(--red); }
+  .dir-input { color: var(--blue); font-weight: 700; }
+  .field { display: grid; gap: 3px; }
+  .field > span { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .note { font-size: 12px; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+
+  /* モーダル */
+  dialog { border: 1px solid var(--line); border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--card); color: var(--ink); }
+  dialog::backdrop { background: rgba(29, 29, 41, .35); }
+  dialog .inner { padding: 22px; display: grid; gap: 14px; }
+  dialog h3 { margin: 0; font-size: 18px; font-weight: 900; }
+
+  footer { margin-top: 40px; color: var(--muted); font-size: 12px; text-align: center; }
+
+  .vm-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: start; }
+  .vm-preview { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; justify-content: center; }
+  .vm-preview canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  .vm-preview.portrait canvas { width: auto; height: 460px; max-width: 100%; aspect-ratio: 9 / 16; }
+  .vm-controls { display: grid; gap: 12px; }
+  .vm-controls .check { margin-bottom: 0; }
+
+  .suggest { position: absolute; z-index: 60; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(29,29,41,.14); max-height: 260px; overflow: auto; padding: 4px; }
+  .suggest button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .suggest button:hover, .suggest button.active { background: var(--blue-soft); color: var(--blue); }
+  .suggest { max-height: 320px; }
+  .suggest .sg-head { font-size: 11px; font-weight: 700; color: var(--muted); padding: 8px 10px 2px; }
+  .suggest .sg-head:first-child { padding-top: 4px; }
+  .suggest .sg-foot { font-size: 11px; color: var(--muted); padding: 6px 10px 4px; border-top: 1px solid var(--line); margin-top: 4px; }
+
+  .mv-grid { display: grid; grid-template-columns: 1fr 1fr 0.8fr; gap: 14px; }
+  .mv-step { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+  .mv-head { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .mv-step .note { background: var(--card); margin: 0; }
+  .mv-check { font-size: 13px; }
+  .mv-check li { font-size: 13px; }
+  .mv-voices { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .mv-voices li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  .mv-voices .id { color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; }
+  .mv-voices .sp { flex: 1; }
+  .mv-voices .empty { color: var(--muted); background: transparent; border: 0; padding: 0; }
+
+  @media (max-width: 900px) {
+    .controls { grid-template-columns: 1fr 1fr; }
+    .cast, .vm-grid, .mv-grid { grid-template-columns: 1fr; }
+    .cast-card, .cast:not(.one) .cast-card { grid-template-columns: 1fr; }
+    .cast-card .who, .cast-card .hint { grid-column: 1 / -1; }
+  }
+  @media (max-width: 640px) {
+    .tts-foot { grid-template-columns: 1fr; }
+    .wrap { padding: 0 16px 60px; }
+    nav.tabs { margin-left: 0; order: 3; width: 100%; }
+    nav.tabs button { flex: 1; padding: 7px 8px; }
+    .stats, .compare { grid-template-columns: 1fr 1fr; }
+    .grid2, .controls { grid-template-columns: 1fr; }
+    .stat .v { font-size: 26px; }
+    .script-head { display: none; }
+    .line, .script.one .line { grid-template-columns: 1fr 1fr 28px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .line:last-child { border-bottom: 0; }
+    .script.one .line { grid-template-columns: 1fr 28px; }
+    .script.one .line textarea { grid-column: 1 / 2; }
+    .line .no { display: none; }
+    .line textarea { grid-column: 1 / 3; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="34" height="34" rx="10" fill="#2433E0"/>
+        <g fill="#fff"><rect x="8" y="14" width="3" height="6" rx="1.5"/><rect x="13" y="9" width="3" height="16" rx="1.5"/><rect x="18" y="12" width="3" height="10" rx="1.5"/><rect x="23" y="7" width="3" height="20" rx="1.5"/></g>
+      </svg>
+      こえラボ
+    </div>
+    <span class="tagline">声を分析して、整えて、書き出す</span>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="edit">① 分析・変換</button>
+      <button role="tab" aria-selected="false" data-tab="tts">② 台本から声を作る</button>
+    </nav>
+    <button class="icon-btn" id="openSettings" title="Gemini APIキーなどの設定">⚙ 設定</button>
+  </header>
+
+  <!-- ============ ① 分析・変換 ============ -->
+  <main id="tab-edit">
+    <section class="step">
+      <div class="step-head">
+        <span class="pill">STEP 1 <span class="dots"><i class="on"></i><i></i><i></i><i></i></span></span>
+        <h2>声を<span class="u">入れる</span></h2>
+        <p class="lead">音声（mp3・wav・m4a など）も動画（mp4・mov・webm）もOK。ファイルはこのパソコンの中だけで処理します。</p>
+      </div>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="ファイルを選ぶ">
+        <div class="dots-line" aria-hidden="true"></div>
+        <strong>ここに音声・動画をドラッグ＆ドロップ</strong>
+        <div class="sub">またはクリックしてファイルを選ぶ</div>
+        <button class="btn btn-rec" id="recBtn" type="button">● マイクで録音する</button>
+      </div>
+      <input type="file" id="fileInput" accept="audio/*,video/*,.m4a,.mov,.mkv" hidden>
+      <div id="fileCard" class="card hidden">
+        <div class="filebar">
+          <video id="videoPreview" class="preview hidden" controls muted playsinline></video>
+          <div>
+            <div class="name" id="fileName"></div>
+            <div class="meta"><span class="tag" id="fileKind"></span> <span id="fileMeta"></span></div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn ghost small" id="changeFile">別のファイルにする</button>
+        </div>
+      </div>
+      <div class="status" id="loadStatus"></div>
+    </section>
+
+    <section class="step hidden" id="secAnalyze">
+      <div class="step-head">
+        <span class="pill">STEP 2 <span class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></span></span>
+        <h2>声を<span class="u">分析</span>する</h2>
+        <p class="lead">波形をドラッグすると範囲を選べます（その範囲だけ変換・書き出し）。クリックでその位置から再生。</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ic">〰</span>声の波形<span class="right" id="selInfo">全体</span></div>
+        <div class="wave-wrap"><canvas class="wave" id="waveOrig"></canvas></div>
+        <div class="wave-foot">
+          <button class="btn small" id="playOrig">▶ 再生</button>
+          <span class="time" id="timeOrig">0:00.0 / 0:00.0</span>
+          <button class="btn ghost small hidden" id="clearSel">範囲選択を解除</button>
+        </div>
+      </div>
+
+      <div class="stats" style="margin-top:12px" id="stats"></div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title"><span class="ic">♪</span>声の高さの動き<span class="right" id="pitchNote"></span></div>
+          <canvas class="chart" id="pitchChart"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ic">▥</span>音の成分<span class="right" id="specNote"></span></div>
+          <canvas class="chart" id="specChart"></canvas>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title"><span class="ic">✓</span>診断</div>
+          <ul class="diag" id="diag"></ul>
+          <div class="row" style="margin-top:12px"><button class="btn small" id="applyRec">おすすめの設定をSTEP 3に反映</button></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ic">✦</span>AIで文字起こし・話し方診断</div>
+          <p class="lead" style="margin-bottom:10px">話した内容を文字にして、速さ・聞き取りやすさ・改善点をAIがコメントします。Gemini APIキーが必要で、音声はGoogleに送信されます。</p>
+          <button class="btn small" id="aiAnalyze">AIに聞いてもらう</button>
+          <div class="status" id="aiStatus"></div>
+          <div class="ai-out" id="aiOut"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="step hidden" id="secConvert">
+      <div class="step-head">
+        <span class="pill">STEP 3 <span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span>
+        <h2>声を<span class="u">変換</span>する</h2>
+        <p class="lead">プリセットを押してから、細かく調整できます。</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ic">★</span>プリセット</div>
+        <div class="chips" id="presets"></div>
+      </div>
+      <div class="controls">
+        <div class="card">
+          <div class="card-title"><span class="ic">↕</span>声</div>
+          <div class="ctl"><label>声の高さ <output id="o_pitch"></output></label><input type="range" id="c_pitch" min="-12" max="12" step="1" value="0"><span class="hint">＋で高く、−で低く（半音）</span></div>
+          <div class="ctl"><label>話す速さ <output id="o_speed"></output></label><input type="range" id="c_speed" min="0.5" max="2" step="0.05" value="1"><span class="hint">声の高さは変わりません</span></div>
+          <div class="ctl"><label>声のキャラ</label>
+            <select id="c_character">
+              <option value="none">そのまま</option>
+              <option value="robot">ロボット</option>
+              <option value="phone">電話ごし</option>
+              <option value="radio">古いラジオ</option>
+              <option value="megaphone">拡声器</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ic">✧</span>整える</div>
+          <div class="ctl"><label>ノイズを減らす <output id="o_denoise"></output></label><input type="range" id="c_denoise" min="0" max="1" step="0.05" value="0"><span class="hint">サーッという背景音を抑える</span></div>
+          <label class="check"><input type="checkbox" id="c_cut"><span>無音をつめる<span class="hint">0.5秒以上の間を短くする</span></span></label>
+          <label class="check"><input type="checkbox" id="c_comp"><span>声の大小をならす<span class="hint">小さい声を持ち上げて聞きやすく</span></span></label>
+          <label class="check"><input type="checkbox" id="c_norm"><span>音量をそろえる<span class="hint">書き出し先に合わせた大きさにする</span></span></label>
+          <select id="c_target">
+            <option value="-14">YouTube・SNS（-14）</option>
+            <option value="-16" selected>ポッドキャスト（-16）</option>
+            <option value="-23">放送・控えめ（-23）</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ic">≋</span>音色</div>
+          <div class="ctl"><label>低音 <output id="o_bass"></output></label><input type="range" id="c_bass" min="-12" max="12" step="1" value="0"><span class="hint">＋で太く、−でスッキリ</span></div>
+          <div class="ctl"><label>はっきり <output id="o_clarity"></output></label><input type="range" id="c_clarity" min="-12" max="12" step="1" value="0"><span class="hint">こもった声は＋に</span></div>
+          <div class="ctl"><label>高音 <output id="o_treble"></output></label><input type="range" id="c_treble" min="-12" max="12" step="1" value="0"><span class="hint">＋できらびやか、−で耳あたりやわらか</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ic">◎</span>響き</div>
+          <div class="ctl"><label>ホールの響き <output id="o_reverb"></output></label><input type="range" id="c_reverb" min="0" max="1" step="0.05" value="0"></div>
+          <div class="ctl"><label>やまびこ <output id="o_echo"></output></label><input type="range" id="c_echo" min="0" max="1" step="0.05" value="0"></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn big" id="convertBtn">変換する</button>
+        <button class="btn ghost" id="resetBtn">設定をリセット</button>
+      </div>
+      <div class="progress hidden" id="convProg"><i></i></div>
+      <div class="status" id="convStatus"></div>
+    </section>
+
+    <section class="step hidden" id="secExport">
+      <div class="step-head">
+        <span class="pill">STEP 4 <span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
+        <h2>聞きくらべて<span class="u">書き出す</span></h2>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ic">〰</span>変換後の波形<span class="right" id="procInfo"></span></div>
+        <canvas class="wave" id="waveProc"></canvas>
+        <div class="wave-foot">
+          <button class="btn small" id="playProc">▶ 再生</button>
+          <span class="time" id="timeProc">0:00.0 / 0:00.0</span>
+          <div class="seg" role="group" aria-label="聞きくらべ">
+            <button aria-pressed="true" data-ab="proc">変換後</button>
+            <button aria-pressed="false" data-ab="orig">元の音</button>
+          </div>
+          <span>再生中に切り替えると同じ位置で聞きくらべできます</span>
+        </div>
+      </div>
+      <div class="compare" id="compare"></div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title"><span class="ic">⤓</span>書き出し</div>
+        <div class="row">
+          <button class="btn" id="expWav">WAVで保存</button>
+          <button class="btn" id="expMp3">MP3で保存</button>
+          <button class="btn hidden" id="expVideo">動画（音を差し替え）で保存</button>
+        </div>
+        <div class="progress hidden" id="expProg"><i></i></div>
+        <div class="status" id="expStatus"></div>
+        <p class="lead" id="videoNote" style="margin-top:6px"></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ ② 台本から声を作る ============ -->
+  <main id="tab-tts" class="hidden">
+    <section class="step">
+      <div class="step-head">
+        <span class="pill">AIボイス</span>
+        <h2>1行ずつ、<span class="u">演技</span>を指示</h2>
+        <p class="lead">Gemini の音声合成（TTS）で台本を読み上げます。1人の語りも、2人の掛け合いも1回で生成できます。</p>
+      </div>
+      <div class="card tts-card">
+        <div class="card-title"><span class="ic">▤</span>台本<span class="right tts-switches"><span class="seg" role="group" aria-label="読み上げる言語"><button aria-pressed="true" data-lang="ja">日本語</button><button aria-pressed="false" data-lang="en">English</button><button aria-pressed="false" data-lang="zh">中文</button></span><span class="seg" role="group" aria-label="人数"><button aria-pressed="true" data-mode="1">1人</button><button aria-pressed="false" data-mode="2">2人の掛け合い</button></span></span></div>
+        <div class="cast-label">配役</div>
+        <div class="cast" id="speakers"></div>
+        <div class="script" id="script">
+          <div class="script-head"><span></span><span class="sp-col">話す人</span><span class="dir">演技指示</span><span>セリフ</span><span></span></div>
+          <div id="lines"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost small" id="addLine">＋ 行を追加</button>
+          <button class="btn ghost small" id="sampleScript" aria-haspopup="menu">見本の台本を入れる ▾</button>
+        </div>
+        <div class="tts-foot">
+          <div class="field"><label class="field"><span>全体の雰囲気（任意）</span><input type="text" id="ttsStyle" placeholder="例：深夜ラジオのような、親しみのあるトーン"></label><p class="hint" id="styleHint"></p></div>
+          <button class="btn big" id="ttsGen">声を生成する</button>
+          <div class="progress hidden" id="ttsProg"><i></i></div>
+          <div class="status" id="ttsStatus"></div>
+        </div>
+      </div>
+    </section>
+    <section class="step" id="myVoiceSec">
+      <div class="card">
+        <div class="card-title"><span class="ic">🎙</span>自分の声を登録（声の再現）<span class="right">Gemini 3.8 の Voice Replication を使います</span></div>
+        <p class="lead" style="margin-bottom:12px">自分の声の見本と「同意の読み上げ」を録ると、その声で台本を読めるようになります。<strong>登録できるのは自分の声だけ</strong>です（見本と同意が同じ人の声か、Google が照合します）。</p>
+        <div class="mv-grid">
+          <div class="mv-step">
+            <div class="mv-head"><span class="pill">1</span>見本を録る（10〜30秒）</div>
+            <p class="note">静かな部屋で、いつもの話し方で。読む文に迷ったらこちらをどうぞ：<br><span id="mvSampleText">こんにちは。今日は、声の見本を録音しています。朝の空気は少しひんやりしていて、窓の外からは鳥の声が聞こえます。いつもの話し方で、ゆっくり読んでいきます。最後まで聞いてくださって、ありがとうございます。</span></p>
+            <div class="row">
+              <button class="btn small" id="mvRecSrc">● 録音する</button>
+              <button class="btn ghost small" id="mvFileSrc">ファイルを選ぶ</button>
+              <button class="btn ghost small hidden" id="mvPlaySrc">▶ 聞く</button>
+              <button class="btn ghost small hidden" id="mvSaveSrc">WAVで保存</button>
+            </div>
+            <input type="file" id="mvFileSrcInput" accept="audio/*,video/*" hidden>
+            <ul class="diag mv-check" id="mvSrcCheck"></ul>
+          </div>
+          <div class="mv-step">
+            <div class="mv-head"><span class="pill">2</span>同意を読み上げる</div>
+            <label class="field"><span>読む言語</span>
+              <select id="mvLang"><option value="ja-JP">日本語</option><option value="en-US">English（英語）</option></select>
+            </label>
+            <p class="note">次の文を、<strong>一字一句そのまま</strong>、見本と同じ場所・同じマイクで読んでください。<br><strong id="mvConsentText"></strong></p>
+            <div class="row">
+              <button class="btn small" id="mvRecCon">● 録音する</button>
+              <button class="btn ghost small" id="mvFileCon">ファイルを選ぶ</button>
+              <button class="btn ghost small hidden" id="mvPlayCon">▶ 聞く</button>
+              <button class="btn ghost small hidden" id="mvSaveCon">WAVで保存</button>
+            </div>
+            <input type="file" id="mvFileConInput" accept="audio/*,video/*" hidden>
+            <ul class="diag mv-check" id="mvConCheck"></ul>
+          </div>
+          <div class="mv-step">
+            <div class="mv-head"><span class="pill">3</span>声を作る</div>
+            <label class="field"><span>声の名前</span><input type="text" id="mvName" value="自分の声"></label>
+            <label class="check" style="margin-top:8px"><input type="checkbox" id="mvStore" checked><span>1年間保存する<span class="hint">外すと7日で自動的に消えます</span></span></label>
+            <button class="btn" id="mvCreate" disabled>声を作る</button>
+            <div class="status" id="mvStatus"></div>
+          </div>
+        </div>
+        <div class="mv-list">
+          <div class="card-title" style="margin:16px 0 6px"><span class="ic">★</span>登録した声<span class="right"><button class="btn ghost small" id="mvRefresh">一覧を更新</button></span></div>
+          <ul class="mv-voices" id="mvList"></ul>
+        </div>
+      </div>
+    </section>
+    <section class="step hidden" id="ttsResult">
+      <div class="card">
+        <div class="card-title"><span class="ic">〰</span>生成した声<span class="right" id="ttsInfo"></span></div>
+        <canvas class="wave" id="waveTts"></canvas>
+        <div class="wave-foot">
+          <button class="btn small" id="playTts">▶ 再生</button>
+          <span class="time" id="timeTts">0:00.0 / 0:00.0</span>
+          <span class="spacer" style="flex:1"></span>
+          <button class="btn ghost small" id="ttsWav">WAVで保存</button>
+          <button class="btn small" id="ttsToEdit">① 分析・変換で開く</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="ic">▶</span>解説動画にする<span class="right">波形アニメと字幕の動画を作って mp4 で保存</span></div>
+        <div class="vm-grid">
+          <div class="vm-preview" id="vPreviewWrap"><canvas id="vPreview"></canvas></div>
+          <div class="vm-controls">
+            <div class="field"><span>向き</span>
+              <div class="seg" role="group" aria-label="動画の向き"><button aria-pressed="true" data-orient="h">横長 1920×1080</button><button aria-pressed="false" data-orient="v">縦長 1080×1920</button></div>
+            </div>
+            <label class="field"><span>タイトル（任意）</span><input type="text" id="vTitle" placeholder="例：AIが演じる声、聞いてみて"></label>
+            <label class="field"><span>ラベル（左上の青い札）</span><input type="text" id="vTag" value="AIボイス"></label>
+            <label class="check"><input type="checkbox" id="vSub" checked><span>字幕を出す<span class="hint" id="vTiming">行の切り替えは、声の「間」から自動で合わせます</span></span></label>
+            <label class="check"><input type="checkbox" id="vAi" checked><span>「AI音声」と表示する<span class="hint">AIで作った声だと見る人に伝わります</span></span></label>
+            <button class="btn big" id="vMake">動画を作って保存</button>
+            <div class="progress hidden" id="vProg"><i></i></div>
+            <div class="status" id="vStatus"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>こえラボ — 分析と変換はすべてブラウザ内で行います。AI機能（文字起こし・台本の読み上げ）を使ったときだけ Google Gemini API に送信します。</footer>
+</div>
+
+<dialog id="settings">
+  <form method="dialog" class="inner">
+    <h3>設定（Gemini API）</h3>
+    <p class="lead">AI機能を使うときだけ必要です。キーはこのブラウザの中（localStorage）だけに保存され、Googleへの送信以外には使いません。キーは <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> で発行できます。</p>
+    <label class="field"><span>APIキー</span><input type="password" id="s_key" autocomplete="off" placeholder="AIza..." autofocus></label>
+    <label class="field"><span>読み上げ（TTS）に使うモデル</span><select id="s_tts"></select></label>
+    <label class="field"><span>文字起こし・診断に使うモデル</span><select id="s_ai"></select></label>
+    <div class="row">
+      <button class="btn ghost small" type="button" id="listModels">使えるモデルを取得</button>
+      <span class="status" id="modelStatus" style="margin:0"></span>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn ghost" value="cancel">閉じる</button>
+      <button class="btn" id="saveSettings" value="ok">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="dsp.js?v=20260927b"></script>
+<script src="video.js?v=20260927b"></script>
+<script src="app.js?v=20260927b"></script>
+</body>
+</html>
