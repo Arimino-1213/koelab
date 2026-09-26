@@ -218,7 +218,13 @@
   #vTiming.warn { color: var(--amber); font-weight: 700; }
   .scene-editor { margin-top: 14px; }
   .scene-editor summary { cursor: pointer; font-weight: 700; font-size: 14px; }
-  .scene-row { display: grid; grid-template-columns: 24px 1fr 130px 1.2fr 64px; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .scene-row { display: grid; grid-template-columns: 24px 132px 1fr 130px 1.2fr 64px; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .scene-editor.no-motion .scene-row { grid-template-columns: 24px 132px 1fr; }
+  .scene-editor.no-motion .scene-row > select, .scene-editor.no-motion .scene-row > input { display: none; }
+  .scene-row .tm { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+  .scene-row .tm button { border: 0; background: transparent; padding: 5px 8px; cursor: pointer; font-weight: 700; font-size: 13px; color: var(--ink); }
+  .scene-row .tm button:hover { background: var(--blue-soft); color: var(--blue); }
+  .scene-row .tm .tm-v { flex: 1; font-variant-numeric: tabular-nums; border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-width: 62px; }
   .scene-row .no { color: var(--muted); font-size: 12px; text-align: right; }
   .scene-row .line-text { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scene-row .emoji-in { text-align: center; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
@@ -568,7 +574,7 @@
           </div>
         </div>
         <details class="scene-editor hidden" id="sceneEditor" open>
-          <summary>演出の編集（行ごとの型・画面に出す言葉・絵文字）</summary>
+          <summary>行ごとの字幕のタイミングと演出（時刻を押すとその行から再生、−／＋で0.1秒ずつ調整）</summary>
           <div id="sceneList"></div>
         </details>
       </div>

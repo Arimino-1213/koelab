@@ -1464,8 +1464,10 @@
     : /high demand|overloaded|unavailable|503/i.test(w) ? 'Gemini が混み合っています。少し待ってからもう一度' : w.slice(0, 60));
   // 字幕の合わせ方を表示。予備の方法（間と文字数からの推定）になったら目立たせ、合わせ直せるようにする
   function showTiming(al, n) {
-    const el = $('vTiming'), fb = n >= 2 && al.method !== 'transcript';
+    const el = $('vTiming'), fb = n >= 2 && al.method !== 'transcript' && al.method !== 'manual';
+    if (S.tts) S.tts.fallback = fb;
     el.textContent = n < 2 ? '1行なので、字幕はずっと同じ行を出します'
+      : al.method === 'manual' ? '字幕の切り替えを手で調整しました（下の一覧で直せます）'
       : !fb ? `${n}行の切り替えを、話した内容と照らし合わせて合わせました`
       : `字幕は目安です：文字起こしで合わせられず、声の「間」と文字数から推定しました${al.why ? `（${shortWhy(al.why)}）` : ''}。掛け合いでは字幕が先に進むことがあるので、「字幕の位置を合わせ直す」を押してください`;
     el.classList.toggle('warn', fb);
@@ -1477,8 +1479,9 @@
     $('vTiming').textContent = '字幕の位置を合わせています…（話した内容を文字起こしして、台本の行と照らし合わせます）';
     try {
       const al = await alignSubtitles(S.tts.data, S.tts.sr, S.tts.lines);
-      S.tts.segs = al.segs; S.tts.snapped = al.snapped; vState = null;
+      S.tts.segs = al.segs; S.tts.snapped = al.snapped; S.tts.manual = false; vState = null;
       showTiming(al, S.tts.lines.length);
+      renderSceneEditor();
       drawPreview();
     } finally { btn.disabled = false; }
   };
@@ -1796,14 +1799,16 @@
   const SCENE_HINT = { title: '要点の言葉（12字まで）', count: '「3回」のように数字＋単位', list: '「／」で区切って2〜4個', bubble: '吹き出しの言葉（16字まで）', zoom: 'オチ・間の言葉（10字まで）', emoji: '添える言葉（8字まで）' };
   function renderSceneEditor() {
     const box = $('sceneList'), wrap = $('sceneEditor');
-    const on = T.video.motion !== false && S.tts && S.tts.lines;
-    wrap.classList.toggle('hidden', !on);
-    $('vScenesAi').classList.toggle('hidden', !on);
-    if (!on) return;
+    const has = !!(S.tts && S.tts.lines && S.tts.segs), motion = T.video.motion !== false;
+    wrap.classList.toggle('hidden', !has);
+    wrap.classList.toggle('no-motion', !motion);
+    $('vScenesAi').classList.toggle('hidden', !has || !motion);
+    if (!has) return;
     box.innerHTML = S.tts.lines.map((l, i) => {
       const sc = l.scene || KoeVideo.autoScene(l, S.tts.multi);
       return `<div class="scene-row" data-i="${i}">
         <span class="no">${i + 1}</span>
+        <span class="tm"><button type="button" data-t="-0.1" title="字幕を0.1秒早く">−</button><button type="button" class="tm-v" data-play title="この行から再生">${S.tts.segs[i].start.toFixed(1)}秒</button><button type="button" data-t="0.1" title="字幕を0.1秒遅く">＋</button></span>
         <span class="line-text" title="${esc(l.text)}">${esc(l.text)}</span>
         <select data-k="type" aria-label="演出の型">${KoeVideo.SCENE_TYPES.map((t) => `<option value="${t}" ${t === sc.type ? 'selected' : ''}>${SCENE_LABEL[t]}</option>`).join('')}</select>
         <input type="text" data-k="text" value="${esc(sc.text || '')}" placeholder="${esc(SCENE_HINT[sc.type])}" aria-label="画面に出す言葉">
@@ -1818,7 +1823,24 @@
         if (el.dataset.k === 'type') row.querySelector('[data-k=text]').placeholder = SCENE_HINT[el.value];
         vState = null; drawPreview();
       });
+      row.querySelector('[data-play]').onclick = () => player.play('tts', S.tts.segs[i].start);
+      row.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => nudgeLine(i, parseFloat(b.dataset.t)));
     });
+  }
+
+  /** 字幕の切り替え時刻を手で直す（前後の行と重ならない範囲で） */
+  function nudgeLine(i, d) {
+    const segs = S.tts.segs, dur = S.tts.data.length / S.tts.sr;
+    const lo = i > 0 ? segs[i - 1].start + 0.2 : 0, hi = i + 1 < segs.length ? segs[i + 1].start - 0.2 : dur - 0.2;
+    const start = Math.min(hi, Math.max(lo, Math.round((segs[i].start + d) * 10) / 10));
+    segs[i] = { start, end: Math.max(start + 0.1, segs[i].end) };
+    if (i > 0) segs[i - 1] = { start: segs[i - 1].start, end: Math.min(segs[i - 1].end, start) };
+    // 手で動かした行とその前の行は、断片ごとの時刻（文字が濃くなる速さの手がかり）を捨てて一定の速さにする
+    delete segs[i].parts; if (i > 0) delete segs[i - 1].parts;
+    S.tts.manual = true; S.tts.fallback = false;
+    showTiming({ method: 'manual' }, S.tts.lines.length);
+    vState = null; renderSceneEditor();
+    player.seek('tts', Math.max(0, start - 0.3)); drawPreview(start + 0.2);
   }
 
   // 絵文字は見た目の1文字（🙇‍♀️ のような組み合わせも含む）で取り出す。途中で切ると形が崩れる
@@ -1865,6 +1887,7 @@ ${lines.map((l, i) => `${i + 1}. [${S.tts.multi ? `話す人:${S.tts.speakers[l.
 
   $('vMake').onclick = async () => {
     if (!S.tts) return;
+    if (S.tts.fallback && !window.confirm('字幕の切り替えが目安のままです（文字起こしで合わせられませんでした）。掛け合いでは字幕が先に進むことがあります。\n\n「字幕の位置を合わせ直す」か、下の一覧の −／＋ で直せます。このまま動画を作りますか？')) return;
     const btn = $('vMake'); btn.disabled = true; player.stop();
     const [W, H] = vSize();
     const t0 = Date.now();
