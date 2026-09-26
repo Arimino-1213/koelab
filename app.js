@@ -789,17 +789,19 @@
     return j;
   }
   // 混雑（high demand / 429 / 503）のときは少し待って再試行し、だめなら一覧の次のモデルに切り替える
-  const busy = (m) => /high demand|overloaded|unavailable|resource.?exhausted|try again later|HTTP (429|503)/i.test(m);
-  async function geminiText(body) {
+  // 無料枠の上限（quota / rate limit）もモデルごとに別なので、同じく次のモデルに切り替える
+  const busy = (m) => /high demand|overloaded|unavailable|resource.?exhausted|try again later|quota|rate.?limit|exceeded|HTTP (429|503)/i.test(m);
+  async function geminiText(body, prefer = []) {
     let cached = null;
     try { cached = JSON.parse(store.get('models', '')); } catch { /* 一覧なし */ }
-    const models = [...new Set([modelId(cfg.aiModel), ...((cached && cached.ai) || []).slice(0, 4), 'gemini-2.5-flash'])];
+    const models = [...new Set([...prefer, modelId(cfg.aiModel), ...((cached && cached.ai) || []).slice(0, 4), 'gemini-2.5-flash'])];
     let last;
     for (const m of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
         try { return { res: await gemini(m, body), model: m }; } catch (err) {
           last = err;
           if (!busy(err.message)) throw err;
+          if (/quota|rate.?limit|exceeded|HTTP 429/i.test(err.message)) break; // 上限は待っても戻らないので、すぐ次のモデルへ
           await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
         }
       }
@@ -995,19 +997,20 @@
     { sp: 0, dir: '深深鞠躬', text: '明天，我会买三个同样的布丁还回去。其中一个，送给各位记者。' },
   ];
   const PROMO_JA = [
-    { sp: 0, dir: '元気よく、CM風に', text: 'どうも！ 台本を渡されると、何でも演じる声のAIです。' },
-    { sp: 1, dir: '小声で', text: '……ちょっと、まだ本番じゃないよ。' },
-    { sp: 0, dir: '急に真面目に', text: '失礼しました。こちら、こえラボ。1行ずつ、演技を指示できるアプリです。' },
-    { sp: 1, dir: '自慢げに', text: 'ささやく、ため息、笑いをこらえる……全部、文章で指示できるんだ。' },
-    { sp: 0, dir: 'ため息まじりに', text: 'おかげで私、今日だけで三回も謝罪会見をしました。' },
-    { sp: 1, dir: '笑いをこらえながら', text: 'プリンの件ね。' },
-    { sp: 0, dir: 'ささやくように', text: 'しかも、二人の掛け合いも一回で作れるんです。つまり……' },
-    { sp: 1, dir: '驚いて', text: 'つまり？' },
-    { sp: 0, dir: '間をたっぷり取って', text: '……相方も、私です。' },
-    { sp: 1, dir: 'あきれて', text: 'それは言わなくていいから！' },
-    { sp: 0, dir: '深々と頭を下げるように', text: '字幕つきの動画にもできます。日本語、英語、中国語にも対応しております。' },
-    { sp: 1, dir: '早口で', text: 'ブラウザだけで動いて、APIキーは各自でね！' },
-    { sp: 0, dir: '元気よく、CM風に', text: 'こえラボ。あなたの台本、演じます。リンクは投稿の下に！' },
+    // scene：動画の演出（型・画面に大きく出す言葉・絵文字）
+    { sp: 0, dir: '元気よく、CM風に', text: 'どうも！ 台本を渡されると、何でも演じる声のAIです。', scene: { type: 'title', text: '何でも演じる声のAI', emoji: '🎙' } },
+    { sp: 1, dir: '小声で', text: '……ちょっと、まだ本番じゃないよ。', scene: { type: 'bubble', text: 'まだ本番じゃないよ', emoji: '🤫' } },
+    { sp: 0, dir: '急に真面目に', text: '失礼しました。こちら、こえラボ。1行ずつ、演技を指示できるアプリです。', scene: { type: 'title', text: 'こえラボ', emoji: '🎬' } },
+    { sp: 1, dir: '自慢げに', text: 'ささやく、ため息、笑いをこらえる……全部、文章で指示できるんだ。', scene: { type: 'list', text: 'ささやく／ため息／笑いをこらえる', emoji: '🎭' } },
+    { sp: 0, dir: 'ため息まじりに', text: 'おかげで私、今日だけで三回も謝罪会見をしました。', scene: { type: 'count', text: '3回', emoji: '🙇' } },
+    { sp: 1, dir: '笑いをこらえながら', text: 'プリンの件ね。', scene: { type: 'emoji', text: 'プリンの件', emoji: '🍮' } },
+    { sp: 0, dir: 'ささやくように', text: 'しかも、二人の掛け合いも一回で作れるんです。つまり……', scene: { type: 'bubble', text: '二人の掛け合いも一回で', emoji: '🤖' } },
+    { sp: 1, dir: '驚いて', text: 'つまり？', scene: { type: 'bubble', text: 'つまり？', emoji: '🤔' } },
+    { sp: 0, dir: '間をたっぷり取って', text: '……相方も、私です。', scene: { type: 'zoom', text: '相方も、私です。', emoji: '🤖' } },
+    { sp: 1, dir: 'あきれて', text: 'それは言わなくていいから！', scene: { type: 'bubble', text: '言わなくていいから！', emoji: '😅' } },
+    { sp: 0, dir: '深々と頭を下げるように', text: '字幕つきの動画にもできます。日本語、英語、中国語にも対応しております。', scene: { type: 'list', text: '字幕つき動画／日本語／English／中文', emoji: '🌐' } },
+    { sp: 1, dir: '早口で', text: 'ブラウザだけで動いて、APIキーは各自でね！', scene: { type: 'list', text: 'ブラウザだけ／APIキーは各自', emoji: '💻' } },
+    { sp: 0, dir: '元気よく、CM風に', text: 'こえラボ。あなたの台本、演じます。リンクは投稿の下に！', scene: { type: 'title', text: 'あなたの台本、演じます。', emoji: '✨' } },
   ];
   const SAMPLES = {
     ja: [
@@ -1195,6 +1198,7 @@
       const i = +row.dataset.i;
       row.querySelectorAll('[data-k]').forEach((el) => el.oninput = () => {
         T.lines[i][el.dataset.k] = el.dataset.k === 'sp' ? +el.value : el.value;
+        if (el.dataset.k === 'text') delete T.lines[i].scene; // セリフを変えたら演出は決め直す
         if (el.dataset.k === 'sp') el.style.setProperty('--c', SPEAKER_COLORS[+el.value]);
         saveT();
       });
@@ -1282,7 +1286,7 @@
     // 動画の字幕用に、生成したときの台本を控えておく（あとで台本を書き換えても動画はずれない）
     const snap = {
       lang: T.lang, multi: two, speakers: sp.map((s) => s.name.trim()),
-      lines: lines.map((l) => ({ sp: two ? l.sp : 0, dir: l.dir.trim(), text: l.text.trim() })),
+      lines: lines.map((l) => ({ sp: two ? l.sp : 0, dir: l.dir.trim(), text: l.text.trim(), ...(l.scene ? { scene: { ...l.scene } } : {}) })),
     };
     const style = T.style.trim();
 
@@ -1378,15 +1382,13 @@
       const al = await alignSubtitles(data, sr, snap.lines);
       S.tts = { data, sr, ...snap, segs: al.segs, snapped: al.snapped };
       vState = null;
-      $('vTiming').textContent = snap.lines.length < 2 ? '1行なので、字幕はずっと同じ行を出します'
-        : al.method === 'transcript' ? `${snap.lines.length}行の切り替えを、話した内容と照らし合わせて合わせました`
-        : al.snapped ? `${snap.lines.length}行の切り替えを、声の「間」から推定しました（文字起こしで合わせられなかったため目安です${al.why ? `：${al.why}` : ''}）`
-        : '行の間がはっきりしないため、文字数の割合で切り替えます（目安）';
+      showTiming(al, snap.lines.length);
       player.pos.tts = 0;
       $('ttsResult').classList.remove('hidden');
       waveTts.setData(data, sr);
       paint('tts', 0);
       drawPreview();
+      renderSceneEditor();
       $('ttsInfo').textContent = `${fmt(data.length / sr)} ・ ${modelId(cfg.ttsModel)}`;
       setStatus('ttsStatus', 'できました。下で再生・保存できます。');
       player.play('tts', 0);
@@ -1420,16 +1422,32 @@
       let s = t0;
       for (const g of gaps) { chunks.push({ start: s, end: g.start }); s = g.end; }
       chunks.push({ start: s, end: t1 });
+      // 台本は渡さない（渡すと、聞こえた言葉ではなく台本を断片に流し込むモデルがある。9/27 に 3.6 Flash で確認）。
+      // 聞き取れない短い断片は空欄のままでよい（割り当ての側で次の行の頭に付ける）
       const parts = [];
       for (let i = 0; i < chunks.length; i++) {
         const c = chunks[i], y = await resampleOffline(x.subarray(Math.round(c.start * sr), Math.round(c.end * sr)), sr, 16000);
         parts.push({ text: `断片${i + 1}:` }, { inlineData: { mimeType: 'audio/wav', data: await blobToBase64(new Blob([DSP.encodeWav(y, 16000)])) } });
       }
-      parts.push({ text: `上の${chunks.length}個の音声の断片（${LANG[T.lang].name}）を、それぞれ聞こえたとおりに文字起こしして、JSON配列（文字列${chunks.length}個、断片の順。聞き取れない断片は空文字）だけを返してください。` });
-      const { res } = await geminiText({ contents: [{ parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } });
-      const texts = parseJsonLoose((res.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join(''));
-      if (!Array.isArray(texts) || texts.length !== chunks.length) return fallback('文字起こしの数が合わない');
+      parts.push({ text: `上の${chunks.length}個の音声の断片（${LANG[T.lang].name}）を、それぞれ聞こえたとおりに文字起こしして、JSON配列（文字列${chunks.length}個、断片の順）だけを返してください。前後の断片から推測して補わず、その断片で聞こえた言葉だけを書いてください。聞き取れない断片は空文字、笑い声や息だけなら「（笑）」「（息）」と書いてください。` });
+      // 話す速さとしてありえない量の文字が入った断片があれば、聞き取りではなく推測で埋めたとみなして捨てる
+      const maxRate = T.lang === 'en' ? 28 : 16; // 1秒あたりの文字数（空白・句読点を除く）の上限
+      const plausible = (arr) => arr.every((t, i) => [...DSP.normText(String(t).replace(/[（(][^）)]*[）)]/g, ''))].length <= Math.max(4, (chunks[i].end - chunks[i].start) * maxRate));
+      let texts = null, usedModel = '', why = '文字起こしの数が合わない';
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // 断片ごとに聞こえたとおり書いてくれる 2.5 系を優先する（新しい版は断片の区切りを無視して文を並べ直すことがある）
+        const { res, model } = await geminiText({ contents: [{ parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } }, ['gemini-2.5-flash', 'gemini-2.5-flash-lite']);
+        usedModel = model;
+        const got = parseJsonLoose((res.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join(''));
+        if (!Array.isArray(got) || got.length !== chunks.length) { why = '文字起こしの数が合わない'; continue; }
+        if (!plausible(got)) { why = '文字起こしが音声の長さと合わない'; console.info(`[こえラボ] 字幕合わせ：${model} の文字起こしを捨てました（音声の長さと合わない）`); continue; }
+        texts = got; break;
+      }
+      if (!texts) return fallback(why);
       const groups = DSP.assignChunks(texts.map(String), lines.map((ln) => ln.text));
+      // 字幕がずれたときの調査用（開発者ツールのコンソールにだけ出る）
+      const starts = groups ? groups.map((g) => chunks[g.from].start.toFixed(2)).join(' ') : '割り当てできず';
+      console.info(`[こえラボ] 字幕合わせ（${usedModel}）各行の開始: ${starts}｜断片: ${chunks.map((c, i) => `${c.start.toFixed(2)} ${texts[i]}`).join(' / ')}`);
       if (!groups) return fallback('割り当てできない');
       const segs = groups.map(({ from, to }) => ({
         start: chunks[from].start, end: chunks[to].end,
@@ -1441,6 +1459,29 @@
       return fallback(err.message);
     }
   }
+
+  const shortWhy = (w) => (/quota|rate.?limit|exceeded|429/i.test(w) ? '文字起こしの無料枠の上限に達しています。時間をおくか、明日もう一度'
+    : /high demand|overloaded|unavailable|503/i.test(w) ? 'Gemini が混み合っています。少し待ってからもう一度' : w.slice(0, 60));
+  // 字幕の合わせ方を表示。予備の方法（間と文字数からの推定）になったら目立たせ、合わせ直せるようにする
+  function showTiming(al, n) {
+    const el = $('vTiming'), fb = n >= 2 && al.method !== 'transcript';
+    el.textContent = n < 2 ? '1行なので、字幕はずっと同じ行を出します'
+      : !fb ? `${n}行の切り替えを、話した内容と照らし合わせて合わせました`
+      : `字幕は目安です：文字起こしで合わせられず、声の「間」と文字数から推定しました${al.why ? `（${shortWhy(al.why)}）` : ''}。掛け合いでは字幕が先に進むことがあるので、「字幕の位置を合わせ直す」を押してください`;
+    el.classList.toggle('warn', fb);
+    $('vRealign').classList.toggle('hidden', !fb);
+  }
+  $('vRealign').onclick = async () => {
+    if (!S.tts) return;
+    const btn = $('vRealign'); btn.disabled = true;
+    $('vTiming').textContent = '字幕の位置を合わせています…（話した内容を文字起こしして、台本の行と照らし合わせます）';
+    try {
+      const al = await alignSubtitles(S.tts.data, S.tts.sr, S.tts.lines);
+      S.tts.segs = al.segs; S.tts.snapped = al.snapped; vState = null;
+      showTiming(al, S.tts.lines.length);
+      drawPreview();
+    } finally { btn.disabled = false; }
+  };
 
   $('ttsWav').onclick = () => download(new Blob([DSP.encodeWav(S.tts.data, S.tts.sr)], { type: 'audio/wav' }), `AIボイス_${stamp()}.wav`);
   $('ttsToEdit').onclick = () => {
@@ -1717,9 +1758,9 @@
   syncMyVoices();
 
   // ================= 解説動画 =================
-  T.video = { orient: 'h', title: '', tag: 'AIボイス', sub: true, ai: true, wm: '', wmPos: 'br', ...(T.video || {}) };
+  T.video = { orient: 'h', title: '', tag: 'AIボイス', sub: true, ai: true, wm: '', wmPos: 'br', motion: true, ...(T.video || {}) };
   let vState = null;
-  const vOpts = () => ({ title: T.video.title, tag: T.video.tag, showSub: T.video.sub, showAi: T.video.ai, wm: T.video.wm, wmPos: T.video.wmPos });
+  const vOpts = () => ({ title: T.video.title, tag: T.video.tag, showSub: T.video.sub, showAi: T.video.ai, wm: T.video.wm, wmPos: T.video.wmPos, motion: T.video.motion });
   const vSize = () => (T.video.orient === 'v' ? [1080, 1920] : [1920, 1080]);
   function drawPreview(t) {
     if (!S.tts || !S.tts.segs) return;
@@ -1747,6 +1788,79 @@
   $('vAi').onchange = (e) => { T.video.ai = e.target.checked; onVideoOpt(); };
   $('vWm').oninput = (e) => { T.video.wm = e.target.value; onVideoOpt(); };
   $('vWmPos').onchange = (e) => { T.video.wmPos = e.target.value; onVideoOpt(); };
+  $('vMotion').checked = T.video.motion !== false;
+  $('vMotion').onchange = (e) => { T.video.motion = e.target.checked; renderSceneEditor(); onVideoOpt(); };
+
+  // ----- 行ごとの演出 -----
+  const SCENE_LABEL = { title: '見出し', count: '数字', list: '札を並べる', bubble: '吹き出し', zoom: '寄りで強調', emoji: '絵文字' };
+  const SCENE_HINT = { title: '要点の言葉（12字まで）', count: '「3回」のように数字＋単位', list: '「／」で区切って2〜4個', bubble: '吹き出しの言葉（16字まで）', zoom: 'オチ・間の言葉（10字まで）', emoji: '添える言葉（8字まで）' };
+  function renderSceneEditor() {
+    const box = $('sceneList'), wrap = $('sceneEditor');
+    const on = T.video.motion !== false && S.tts && S.tts.lines;
+    wrap.classList.toggle('hidden', !on);
+    $('vScenesAi').classList.toggle('hidden', !on);
+    if (!on) return;
+    box.innerHTML = S.tts.lines.map((l, i) => {
+      const sc = l.scene || KoeVideo.autoScene(l, S.tts.multi);
+      return `<div class="scene-row" data-i="${i}">
+        <span class="no">${i + 1}</span>
+        <span class="line-text" title="${esc(l.text)}">${esc(l.text)}</span>
+        <select data-k="type" aria-label="演出の型">${KoeVideo.SCENE_TYPES.map((t) => `<option value="${t}" ${t === sc.type ? 'selected' : ''}>${SCENE_LABEL[t]}</option>`).join('')}</select>
+        <input type="text" data-k="text" value="${esc(sc.text || '')}" placeholder="${esc(SCENE_HINT[sc.type])}" aria-label="画面に出す言葉">
+        <input type="text" data-k="emoji" value="${esc(sc.emoji || '')}" placeholder="絵文字" class="emoji-in" aria-label="絵文字">
+      </div>`;
+    }).join('');
+    box.querySelectorAll('.scene-row').forEach((row) => {
+      const i = +row.dataset.i;
+      row.querySelectorAll('[data-k]').forEach((el) => el.oninput = () => {
+        const l = S.tts.lines[i];
+        l.scene = { ...(l.scene || KoeVideo.autoScene(l, S.tts.multi)), [el.dataset.k]: el.value };
+        if (el.dataset.k === 'type') row.querySelector('[data-k=text]').placeholder = SCENE_HINT[el.value];
+        vState = null; drawPreview();
+      });
+    });
+  }
+
+  // 絵文字は見た目の1文字（🙇‍♀️ のような組み合わせも含む）で取り出す。途中で切ると形が崩れる
+  const firstGrapheme = (t) => {
+    const str = String(t || '').trim();
+    if (!str) return '';
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) return [...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(str)][0].segment;
+    return [...str].slice(0, 2).join('');
+  };
+
+  // AI に行ごとの演出を考えてもらう
+  $('vScenesAi').onclick = async () => {
+    if (!S.tts || needKey()) return;
+    const btn = $('vScenesAi'); btn.disabled = true;
+    const st = $('vSceneStatus'); st.textContent = 'AIが演出を考えています…'; st.classList.remove('err');
+    try {
+      const lines = S.tts.lines;
+      const prompt = `次の台本の各行に、解説動画の画面演出を1つずつ決めてください。字幕は別に出るので、画面には行の要点だけを短く大きく見せます。
+使える演出（type）:
+- title: 要点の言葉を大きく見せる（text は12文字以内）
+- count: 数字を強調（text は「3回」「2000+」のように数字と単位）
+- list: 項目を順に並べる（text は項目を「／」で区切って2〜4個、各8文字以内）
+- bubble: 会話の吹き出し（text は16文字以内）
+- zoom: 間やオチを寄りで強調（text は10文字以内）
+- emoji: 絵文字を大きく見せる（text は8文字以内の添え書き）
+各行に内容に合う絵文字を1つ（emoji）。同じ type が3行以上続かないようにしてください。text は台本と同じ言語で書いてください。
+次の形の JSON 配列（行と同じ${lines.length}個）だけを返してください: [{"type":"title","text":"…","emoji":"…"}]
+台本:
+${lines.map((l, i) => `${i + 1}. [${S.tts.multi ? `話す人:${S.tts.speakers[l.sp] || ''}／` : ''}演技:${l.dir || 'なし'}] ${l.text}`).join('\n')}`;
+      const { res } = await geminiText({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, responseMimeType: 'application/json' } });
+      const plan = parseJsonLoose((res.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join(''));
+      if (!Array.isArray(plan) || plan.length !== lines.length) throw new Error('行の数と合う演出が返ってきませんでした');
+      plan.forEach((p, i) => {
+        if (!p || !KoeVideo.SCENE_TYPES.includes(p.type)) return;
+        lines[i].scene = { type: p.type, text: String(p.text || '').slice(0, 40), emoji: firstGrapheme(p.emoji) };
+      });
+      vState = null; renderSceneEditor(); drawPreview();
+      st.textContent = '演出を決めました。下の一覧で直せます。';
+    } catch (err) {
+      st.textContent = '演出を考えられませんでした：' + err.message; st.classList.add('err');
+    } finally { btn.disabled = false; }
+  };
   syncVideoUi();
 
   $('vMake').onclick = async () => {

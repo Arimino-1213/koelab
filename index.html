@@ -215,6 +215,16 @@
   .vm-preview canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
   .vm-preview.portrait canvas { width: auto; height: 460px; max-width: 100%; aspect-ratio: 9 / 16; }
   .vm-controls { display: grid; gap: 12px; }
+  #vTiming.warn { color: var(--amber); font-weight: 700; }
+  .scene-editor { margin-top: 14px; }
+  .scene-editor summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+  .scene-row { display: grid; grid-template-columns: 24px 1fr 130px 1.2fr 64px; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .scene-row .no { color: var(--muted); font-size: 12px; text-align: right; }
+  .scene-row .line-text { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scene-row .emoji-in { text-align: center; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
+  #vSceneStatus { font-size: 12px; color: var(--muted); margin: 0; }
+  #vSceneStatus.err { color: var(--red); font-weight: 700; }
+  #vSceneStatus:empty { display: none; }
   .vm-wm { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
   .vm-controls .check { margin-bottom: 0; }
 
@@ -541,7 +551,11 @@
             <label class="field"><span>タイトル（任意）</span><input type="text" id="vTitle" placeholder="例：AIが演じる声、聞いてみて"></label>
             <label class="field"><span>ラベル（左上の青い札）</span><input type="text" id="vTag" value="AIボイス"></label>
             <label class="check"><input type="checkbox" id="vSub" checked><span>字幕を出す<span class="hint" id="vTiming">行の切り替えは、声の「間」から自動で合わせます</span></span></label>
+            <button type="button" class="btn ghost small hidden" id="vRealign">字幕の位置を合わせ直す</button>
             <label class="check"><input type="checkbox" id="vAi" checked><span>「AI音声」と表示する<span class="hint">AIで作った声だと見る人に伝わります</span></span></label>
+            <label class="check"><input type="checkbox" id="vMotion" checked><span>動きのある演出を付ける<span class="hint">行ごとに、内容に合った見出し・数字・札・吹き出しなどが動きます</span></span></label>
+            <button type="button" class="btn ghost small hidden" id="vScenesAi">AIで演出を考える</button>
+            <p class="hint" id="vSceneStatus"></p>
             <div class="vm-wm">
               <label class="field"><span>透かし（任意）</span><input type="text" id="vWm" placeholder="例：@your_account" autocomplete="off"></label>
               <label class="field"><span>位置</span>
@@ -553,6 +567,10 @@
             <div class="status" id="vStatus"></div>
           </div>
         </div>
+        <details class="scene-editor hidden" id="sceneEditor" open>
+          <summary>演出の編集（行ごとの型・画面に出す言葉・絵文字）</summary>
+          <div id="sceneList"></div>
+        </details>
       </div>
     </section>
   </main>
@@ -578,8 +596,8 @@
   </form>
 </dialog>
 
-<script src="dsp.js?v=20260927d"></script>
-<script src="video.js?v=20260927d"></script>
-<script src="app.js?v=20260927d"></script>
+<script src="dsp.js?v=20260927g"></script>
+<script src="video.js?v=20260927g"></script>
+<script src="app.js?v=20260927g"></script>
 </body>
 </html>

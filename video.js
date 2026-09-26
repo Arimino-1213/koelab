@@ -103,6 +103,196 @@
     return Math.max(0, Math.min(1, done / total));
   }
 
+  // ================= 行ごとの演出（動きのある動画） =================
+  const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  const SCENE_TYPES = ['title', 'count', 'list', 'bubble', 'zoom', 'emoji'];
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const easeOutBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+
+  /** 「3回」「三回」「2000+」から数字と単位を取り出す */
+  function parseCount(text) {
+    const t = String(text || '').trim();
+    let m = t.match(/^([0-9０-９][0-9０-９,，.]*)(.*)$/);
+    if (m) return { n: parseFloat(m[1].replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[,，]/g, '')), unit: m[2].trim() };
+    m = t.match(/^([〇一二三四五六七八九十百千]+)(.*)$/);
+    if (m) {
+      const kan = { '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '百': 100, '千': 1000 };
+      let total = 0, cur = 0;
+      for (const ch of m[1]) { const v = kan[ch]; if (v >= 10) { total += (cur || 1) * v; cur = 0; } else cur = v; }
+      return { n: total + cur, unit: m[2].trim() };
+    }
+    return null;
+  }
+
+  /** 最初の区切り（、。！？）までを短く取り出す */
+  function keyPhrase(text, max) {
+    const t = String(text || '').replace(/^[…・\s]+/, '');
+    const first = t.split(/[。！？!?]/)[0] || t;
+    const parts = first.split(/[、，,]/).filter(Boolean);
+    let out = parts[0] || first;
+    if ([...out].length < 4 && parts[1]) out = out + '、' + parts[1];
+    return [...out].slice(0, max).join('');
+  }
+
+  /** 演出が決まっていない行のための簡易版（API を使わずに台本から決める） */
+  function autoScene(line, multi) {
+    const text = String(line.text || ''), dir = String(line.dir || '');
+    const num = text.match(/([0-9０-９]+|[一二三四五六七八九十百千]+)(回|人|個|つ|種類|行|秒|分|倍|%|％|times|x)/);
+    if (num) return { type: 'count', text: num[0], emoji: '' };
+    const items = text.replace(/[。！？!?…]+$/g, '').split(/[、,，]/).map((x) => x.replace(/^[…\s]+|[…\s]+$/g, '')).filter(Boolean);
+    if (items.length >= 3 && items.every((x) => [...x].length <= 8)) return { type: 'list', text: items.slice(0, 4).join('／'), emoji: '' };
+    if (/間|pause|停顿/.test(dir) || /^[…]/.test(text)) return { type: 'zoom', text: keyPhrase(text, 10), emoji: '' };
+    return { type: multi ? 'bubble' : 'title', text: keyPhrase(text, multi ? 16 : 12), emoji: '' };
+  }
+  const sceneOf = (v, k) => {
+    const sc = v.lines[k].scene;
+    return sc && SCENE_TYPES.includes(sc.type) ? sc : autoScene(v.lines[k], v.multi);
+  };
+
+  function emojiAt(g, e, x, y, size) {
+    if (!e) return;
+    g.save();
+    g.font = `${size}px ${EMOJI_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(e, x, y);
+    g.restore();
+  }
+
+  function drawScene(g, box, v, k, lt, p, s, enter) {
+    const line = v.lines[k], sc = sceneOf(v, k), text = String(sc.text || '').trim();
+    const color = v.multi ? SPEAKER_COLORS[line.sp] || C.blue : C.blue;
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    const pop = 0.7 + 0.3 * easeOutBack(clamp01(enter));
+    g.save();
+    g.translate(cx, cy); g.scale(pop, pop); g.translate(-cx, -cy);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+
+    if (sc.type === 'count') {
+      const pc = parseCount(text) || { n: 0, unit: text };
+      const n = pc.n * easeOutCubic(clamp01(lt / 0.9));
+      const shown = Number.isInteger(pc.n) ? Math.round(n).toLocaleString() : n.toFixed(1);
+      const cw = Math.min(box.w * 0.62, 640 * s), ch = Math.min(box.h * 0.82, 300 * s);
+      g.fillStyle = C.card; g.strokeStyle = C.line; g.lineWidth = 3 * s;
+      rrect(g, cx - cw / 2, cy - ch / 2, cw, ch, 28 * s); g.fill(); g.stroke();
+      g.font = `900 ${Math.round(ch * 0.52)}px ${FONT}`;
+      const nw = g.measureText(shown).width;
+      g.font = `900 ${Math.round(ch * 0.2)}px ${FONT}`;
+      const uw = g.measureText(pc.unit).width;
+      const x0 = cx - (nw + uw + 12 * s) / 2;
+      g.textAlign = 'left'; g.fillStyle = color;
+      g.font = `900 ${Math.round(ch * 0.52)}px ${FONT}`; g.fillText(shown, x0, cy + ch * 0.04);
+      g.font = `900 ${Math.round(ch * 0.2)}px ${FONT}`; g.fillText(pc.unit, x0 + nw + 12 * s, cy + ch * 0.12);
+      emojiAt(g, sc.emoji, cx - cw / 2 + 10 * s, cy - ch / 2 + 6 * s, ch * 0.32);
+    } else if (sc.type === 'list') {
+      const items = text.split(/[／/]/).map((x) => x.trim()).filter(Boolean).slice(0, 5);
+      const fs = Math.round(Math.min(58 * s, box.h * 0.2));
+      g.font = `700 ${fs}px ${FONT}`;
+      const padX = 30 * s, h = fs * 1.9, gap = 18 * s;
+      const widths = items.map((it) => g.measureText(it).width + padX * 2);
+      // 1行に収まらなければ2行に
+      const rows = [[]]; let rw = 0;
+      widths.forEach((w, i) => { if (rows[rows.length - 1].length && rw + w > box.w * 0.92) { rows.push([]); rw = 0; } rows[rows.length - 1].push(i); rw += w + gap; });
+      const totalH = rows.length * h + (rows.length - 1) * gap;
+      const shownUpTo = Math.min(items.length, Math.floor(p * items.length * 1.15 + 1e-6) + 1);
+      rows.forEach((row, r) => {
+        const rowW = row.reduce((a, i) => a + widths[i], 0) + gap * (row.length - 1);
+        let x = cx - rowW / 2; const y = cy - totalH / 2 + r * (h + gap) + (sc.emoji ? 30 * s : 0);
+        row.forEach((i) => {
+          if (i < shownUpTo) {
+            const age = i === shownUpTo - 1 ? clamp01((p * items.length * 1.15 - i) * 2) : 1;
+            const sc2 = 0.6 + 0.4 * easeOutBack(age);
+            const active = i === shownUpTo - 1;
+            g.save(); g.translate(x + widths[i] / 2, y + h / 2); g.scale(sc2, sc2);
+            g.fillStyle = active ? color : C.card; g.strokeStyle = active ? color : C.line; g.lineWidth = 3 * s;
+            rrect(g, -widths[i] / 2, -h / 2, widths[i], h, h / 2); g.fill(); g.stroke();
+            g.fillStyle = active ? '#fff' : C.ink; g.textAlign = 'center'; g.fillText(items[i], 0, 2 * s);
+            g.restore();
+          }
+          x += widths[i] + gap;
+        });
+      });
+      emojiAt(g, sc.emoji, cx, cy - totalH / 2 - 26 * s, 70 * s);
+    } else if (sc.type === 'bubble') {
+      // 1つ前の行も吹き出しなら、上に小さく残して会話の流れを見せる
+      const side = !v.multi ? 0 : line.sp === 0 ? -1 : 1;
+      const drawBubble = (t2, sp, sd, yc, scale, alpha, emoji) => {
+        const fs = Math.round(66 * s * scale);
+        g.save(); g.globalAlpha *= alpha;
+        g.font = `700 ${fs}px ${FONT}`;
+        const f = fit(g, t2, 700, fs, Math.round(fs * 0.7), box.w * 0.55, 2);
+        g.font = `700 ${f.size}px ${FONT}`;
+        const tw = Math.max(...f.lines.map((ln) => g.measureText(ln).width));
+        const bw = tw + 70 * s * scale, bh = f.lines.length * f.size * 1.35 + 44 * s * scale;
+        const av = 92 * s * scale;
+        const bx = sd < 0 ? box.x + box.w * 0.12 + av : sd > 0 ? box.x + box.w * 0.88 - av - bw : cx - bw / 2;
+        const col = v.multi ? SPEAKER_COLORS[sp] || C.blue : C.blue;
+        g.fillStyle = C.card; g.strokeStyle = col; g.lineWidth = 4 * s * scale;
+        rrect(g, bx, yc - bh / 2, bw, bh, 26 * s * scale); g.fill(); g.stroke();
+        // 話す人のアイコン（色の丸＋絵文字）
+        if (sd !== 0) {
+          const ax = sd < 0 ? bx - av * 0.62 : bx + bw + av * 0.62;
+          g.fillStyle = col; g.beginPath(); g.arc(ax, yc, av / 2, 0, Math.PI * 2); g.fill();
+          emojiAt(g, emoji || (sp === 0 ? '🙂' : '😃'), ax, yc + 2 * s, av * 0.55);
+        }
+        g.fillStyle = C.ink; g.textAlign = 'center';
+        f.lines.forEach((ln, i) => g.fillText(ln, bx + bw / 2, yc - (f.lines.length - 1) * f.size * 0.675 + i * f.size * 1.35));
+        g.restore();
+      };
+      const prev = k > 0 && sceneOf(v, k - 1).type === 'bubble' ? k - 1 : -1;
+      if (prev >= 0) drawBubble(String(sceneOf(v, prev).text || ''), v.lines[prev].sp, !v.multi ? 0 : v.lines[prev].sp === 0 ? -1 : 1, box.y + box.h * 0.22, 0.72, 0.4, sceneOf(v, prev).emoji);
+      drawBubble(text, line.sp, side, prev >= 0 ? box.y + box.h * 0.66 : cy, 1, 1, sc.emoji);
+    } else if (sc.type === 'zoom') {
+      // 間やオチ：ゆっくり寄りながら、周りを少し暗くする
+      const grow = 1 + 0.1 * easeOutCubic(clamp01(lt / 2.5));
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); // 画面全体に、中央から外へふんわり暗く
+      const CW = g.canvas.width, CH = g.canvas.height;
+      const grd = g.createRadialGradient(cx, cy, Math.min(CW, CH) * 0.15, cx, cy, Math.max(CW, CH) * 0.7);
+      grd.addColorStop(0, 'rgba(29,29,41,0)'); grd.addColorStop(1, `rgba(29,29,41,${0.16 * clamp01(enter)})`);
+      g.fillStyle = grd; g.fillRect(0, 0, CW, CH);
+      g.restore();
+      g.translate(cx, cy); g.scale(grow, grow); g.translate(-cx, -cy);
+      const f = fit(g, text, 900, Math.round(Math.min(150 * s, box.h * 0.42)), Math.round(60 * s), box.w * 0.85, 2);
+      g.font = `900 ${f.size}px ${FONT}`; g.fillStyle = color;
+      f.lines.forEach((ln, i) => g.fillText(ln, cx, cy - (f.lines.length - 1) * f.size * 0.6 + i * f.size * 1.2));
+      emojiAt(g, sc.emoji, cx, cy - f.size * 0.6 * f.lines.length - 50 * s, 80 * s);
+    } else if (sc.type === 'emoji') {
+      const bounce = Math.abs(Math.sin(lt * 4)) * 26 * s * Math.exp(-lt * 0.8);
+      const es = Math.min(box.h * 0.6, 220 * s);
+      emojiAt(g, sc.emoji || '✨', cx, cy - box.h * 0.1 - bounce, es);
+      if (text) {
+        g.font = `900 ${Math.round(Math.min(64 * s, box.h * 0.17))}px ${FONT}`; g.fillStyle = C.ink;
+        g.fillText(text, cx, cy + es * 0.5 + 10 * s);
+      }
+    } else {
+      // title：要点の言葉を大きく。下線が伸びる
+      const f = fit(g, text, 900, Math.round(Math.min(130 * s, box.h * 0.4)), Math.round(56 * s), box.w * 0.86, 2);
+      g.font = `900 ${f.size}px ${FONT}`; g.fillStyle = C.ink;
+      const lh = f.size * 1.2, top = cy - (f.lines.length - 1) * lh / 2 + (sc.emoji ? 30 * s : 0);
+      f.lines.forEach((ln, i) => g.fillText(ln, cx, top + i * lh));
+      const lw = Math.max(...f.lines.map((ln) => g.measureText(ln).width));
+      const grow = easeOutCubic(clamp01((lt - 0.15) / 0.5));
+      g.fillStyle = color;
+      g.fillRect(cx - lw / 2, top + (f.lines.length - 1) * lh + f.size * 0.62, lw * grow, 10 * s);
+      emojiAt(g, sc.emoji, cx, top - f.size * 0.5 - 50 * s - Math.abs(Math.sin(lt * 3)) * 8 * s, 84 * s);
+    }
+    g.restore();
+  }
+
+  /** 舞台（画面中央）に、今の行と、切り替わり直後は前の行の演出を重ねて描く */
+  function drawStage(g, box, v, t, k, s) {
+    if (k < 0) return;
+    if (box.w < box.h * 2) s *= 1.25; // 縦長は舞台が縦に広いので、演出を大きく
+    const seg = v.segs[k], lt = t - seg.start;
+    if (k > 0 && lt < 0.25) {
+      g.save(); g.globalAlpha = 1 - lt / 0.25;
+      drawScene(g, box, v, k - 1, t - v.segs[k - 1].start, 1, s, 1);
+      g.restore();
+    }
+    g.save(); g.globalAlpha = clamp01((lt + 0.08) / 0.18);
+    drawScene(g, box, v, k, lt, spokenRatio(seg, t), s, clamp01((lt + 0.08) / 0.4));
+    g.restore();
+  }
+
   /** 1コマ描く。v は buildState の結果、t は秒 */
   function drawFrame(g, W, H, v, t) {
     FONT = FONTS[v.lang] || FONTS.ja;
@@ -160,13 +350,17 @@
       g.fillRect(portrait ? W / 2 - bw / 2 : M, lastY + (portrait ? 40 : 22) * s, bw, 8 * s); // 縦長は中央寄せなので、文字の一部に見えないよう離す
     }
 
-    // 波形（中央から外へ広がる棒＋うっすら同心円）
-    const cy = portrait ? H * 0.43 : H * (title ? 0.53 : 0.45);
-    const count = portrait ? 34 : 56, areaW = portrait ? W - 2 * M : Math.min(W - 2 * M, 1300 * s);
-    const bw = areaW / count, maxH = (portrait ? 300 : 260) * s, c = (count - 1) / 2;
+    // 波形（中央から外へ広がる棒＋うっすら同心円）。演出ありのときは舞台の下に小さく
+    const motion = !!v.motion;
+    const stageTop = portrait ? H * (title ? 0.225 : 0.16) : H * (title ? 0.27 : 0.2);
+    const stageBottom = portrait ? H * 0.52 : H * 0.6;
+    const cy = motion ? (portrait ? H * 0.555 : H * 0.645) : portrait ? H * 0.43 : H * (title ? 0.53 : 0.45);
+    const count = motion ? (portrait ? 30 : 48) : portrait ? 34 : 56;
+    const areaW = motion ? (portrait ? (W - 2 * M) * 0.7 : Math.min(W - 2 * M, 900 * s)) : portrait ? W - 2 * M : Math.min(W - 2 * M, 1300 * s);
+    const bw = areaW / count, maxH = motion ? 46 * s : (portrait ? 300 : 260) * s, c = (count - 1) / 2;
     const now = envAt(v, t);
     g.lineWidth = 2 * s;
-    for (let r = 0; r < 4; r++) {
+    for (let r = 0; r < (motion ? 0 : 4); r++) {
       g.strokeStyle = `rgba(36,51,224,${0.07 - r * 0.012})`;
       g.beginPath(); g.arc(W / 2, cy, (portrait ? 250 : 190) * s * (1 + r * 0.42) * (1 + now * 0.05), 0, Math.PI * 2); g.stroke();
     }
@@ -180,6 +374,7 @@
       const x = W / 2 - areaW / 2 + i * bw + bw * 0.22;
       rrect(g, x, cy - h / 2, bw * 0.56, h, Math.min(bw * 0.28, 6 * s)); g.fill();
     }
+    if (motion) drawStage(g, { x: M, y: stageTop, w: W - 2 * M, h: stageBottom - stageTop }, v, t, k, s);
 
     // 字幕
     if (v.showSub && cur) {
@@ -253,7 +448,7 @@
     return {
       lines: tts.lines, segs: tts.segs, multi: tts.multi, speakers: tts.speakers,
       title: opts.title || '', tag: opts.tag || '', showSub: opts.showSub !== false, showAi: opts.showAi !== false,
-      wm: opts.wm || '', wmPos: opts.wmPos || 'br',
+      wm: opts.wm || '', wmPos: opts.wmPos || 'br', motion: !!opts.motion,
       lang: tts.lang || 'ja',
       aiLabel: { en: 'AI voice', zh: 'AI语音' }[tts.lang] || 'AI音声',
       env: e.env, hop: e.hop, dur: tts.data.length / tts.sr,
@@ -270,7 +465,7 @@
 
   async function loadFonts(v) {
     if (!document.fonts || !document.fonts.load) return;
-    const text = [v.title, v.tag, v.wm || '', v.aiLabel || 'AI音声', ...v.speakers, ...v.lines.map((l) => l.text + l.dir)].join('');
+    const text = [v.title, v.tag, v.wm || '', ...v.lines.map((l) => (l.scene && l.scene.text) || ''), v.aiLabel || 'AI音声', ...v.speakers, ...v.lines.map((l) => l.text + l.dir)].join('');
     try {
       const family = v.lang === 'zh' ? 'Noto Sans SC' : 'Noto Sans JP';
       await Promise.all([900, 700].map((w) => document.fonts.load(`${w} 40px "${family}"`, text || 'あ')));
@@ -342,5 +537,5 @@
     return new Blob([muxer.target.buffer], { type: 'video/mp4' });
   }
 
-  root.KoeVideo = { drawFrame, buildState, exportMp4, loadFonts, lineAt };
+  root.KoeVideo = { drawFrame, buildState, exportMp4, loadFonts, lineAt, autoScene, SCENE_TYPES };
 })(typeof self !== 'undefined' ? self : this);

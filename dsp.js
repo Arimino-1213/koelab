@@ -575,17 +575,25 @@
   function assignChunks(chunkTexts, lineTexts) {
     const M = chunkTexts.length, N = lineTexts.length;
     if (M < N || !N) return null;
-    const c = chunkTexts.map(normText), l = lineTexts.map(normText);
+    // （笑）（ため息）のような注記は文字として数えない
+    const strip = (t) => String(t || '').replace(/[（(][^）)]*[）)]/g, '');
+    const c = chunkTexts.map((t) => normText(strip(t))), l = lineTexts.map((t) => normText(strip(t)));
+    // 言葉のない断片（息・笑い・ため息など）は、話し始める前に出ることが多いので次の行の頭に付ける。
+    // 行の「終わり」に付くときだけ小さな費用を足して、同点のときに次の行へ寄せる
+    const NONVERBAL = 0.6;
     const INF = 1e18, dp = [], from = [];
     for (let k = 0; k <= N; k++) { dp.push(new Float64Array(M + 1).fill(INF)); from.push(new Int32Array(M + 1).fill(-1)); }
     dp[0][0] = 0;
     for (let k = 1; k <= N; k++) {
       for (let i = k; i <= M - (N - k); i++) {
-        let text = '';
+        let text = '', trailing = 0, onlyTrailing = true;
         for (let j = i - 1; j >= k - 1; j--) {
           text = c[j] + text; // 断片 j..i-1 を行 k-1 に入れる
+          if (onlyTrailing && !c[j]) trailing++; else onlyTrailing = false;
           if (dp[k - 1][j] >= INF) continue;
-          const v = dp[k - 1][j] + editDistance(text, l[k - 1]);
+          // 行の中身がすべて言葉のない断片なら、末尾扱いにしない（その行の頭として数える）
+          const tail = onlyTrailing ? Math.max(0, trailing - 1) : trailing;
+          const v = dp[k - 1][j] + editDistance(text, l[k - 1]) + NONVERBAL * tail;
           if (v < dp[k][i]) { dp[k][i] = v; from[k][i] = j; }
         }
       }
