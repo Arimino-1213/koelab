@@ -1471,7 +1471,9 @@
       : !fb ? `${n}行の切り替えを、話した内容と照らし合わせて合わせました`
       : `字幕は目安です：文字起こしで合わせられず、声の「間」と文字数から推定しました${al.why ? `（${shortWhy(al.why)}）` : ''}。掛け合いでは字幕が先に進むことがあるので、「字幕の位置を合わせ直す」を押してください`;
     el.classList.toggle('warn', fb);
-    $('vRealign').classList.toggle('hidden', !fb);
+    // 手で直したあとや、無料枠が戻ったあとにも自動で合わせ直せるよう、2行以上ならいつでも出す
+    $('vRealign').classList.toggle('hidden', n < 2);
+    $('vRealign').textContent = fb ? '字幕の位置を合わせ直す（おすすめ）' : '字幕の位置を自動で合わせ直す';
   }
   $('vRealign').onclick = async () => {
     if (!S.tts) return;
