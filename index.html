@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>こえラボ</title>
+<script>document.documentElement.classList.toggle('motion', !matchMedia('(prefers-reduced-motion: reduce)').matches);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
@@ -276,6 +277,172 @@
     .line .no { display: none; }
     .line textarea { grid-column: 1 / 3; }
   }
+
+  /* ================= 計器らしい見た目・動き・押しやすさ ================= */
+  :root { --radius: 8px; --led-off: #DEDCEE; --mono: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  body { word-break: auto-phrase; }
+  h2, h3, .drop strong, .card-title { text-wrap: balance; }
+  .lead, .note, .hint, .status, .route span { text-wrap: pretty; }
+  .nw { white-space: nowrap; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .btn { border-radius: 6px; } .btn.big { border-radius: 8px; }
+  .btn.small { min-height: 36px; }
+  .chip { border-radius: 6px; }
+  .seg { border-radius: 8px; } .seg button { border-radius: 6px; }
+  .pill { border-radius: 4px; font-family: var(--mono); letter-spacing: .02em; }
+  .pill .dots i { border-radius: 1px; }
+  .drop { border-radius: 12px; }
+  nav.tabs { border-radius: 10px; }
+  nav.tabs button { border-radius: 7px; display: grid; justify-items: center; line-height: 1.25; padding: 6px 14px; }
+  nav.tabs button small { font-size: 10.5px; font-weight: 500; opacity: .85; }
+  .icon-btn { border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; }
+  .kdot { width: 8px; height: 8px; border-radius: 50%; background: #B9B4A6; flex: none; }
+  .has-key .kdot { background: var(--green); box-shadow: 0 0 0 3px rgba(30, 138, 85, .16); }
+
+  /* ファイルを置く枠：後ろで声の波形が流れる */
+  .drop { position: relative; overflow: hidden; padding: 40px 20px 32px; transition: background .2s, border-color .2s, transform .25s cubic-bezier(.2,.7,.2,1); }
+  .drop .scope { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  .drop-body { position: relative; }
+  .drop .drop-btns { justify-content: center; margin-top: 18px; }
+  .drop .btn { margin-top: 0; }
+  .drop.over { border-style: solid; transform: scale(1.01); }
+  .drop strong { font-size: 21px; }
+  .only-coarse { display: none; }
+  @media (pointer: coarse) { .only-fine { display: none; } .only-coarse { display: inline; } }
+  .routes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .route { display: grid; gap: 2px; padding: 9px 14px; font-size: 13px; background: rgba(255, 253, 246, .9); border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 6px; }
+  .route + .route { border-left-color: var(--amber); }
+  .route span { color: var(--muted); }
+  .route { grid-template-columns: 1fr auto; column-gap: 12px; }
+  .route b, .route span { grid-column: 1; }
+  .route .route-go { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+  /* ① の手順（画面の上に貼りつく） */
+  .rail { position: sticky; top: 0; z-index: 40; display: flex; gap: 6px; margin: 12px -6px 0; padding: 6px; background: rgba(251, 245, 230, .94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  .rail button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border: 1px solid var(--line); background: var(--card); border-radius: 6px; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; transition: color .2s, border-color .2s, box-shadow .2s; }
+  .rail button i { font-style: normal; font-family: var(--mono); font-size: 11px; border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; line-height: 1.5; }
+  .rail button.now { color: var(--blue); border-color: var(--blue); box-shadow: inset 0 -3px 0 var(--blue); }
+  .rail button:disabled { opacity: .45; cursor: default; }
+  section.step { scroll-margin-top: 64px; }
+
+  /* レベルメーター（再生中の音の大きさ） */
+  .vu { display: inline-flex; gap: 2px; align-items: stretch; height: 14px; }
+  .vu i { width: 4px; background: var(--led-off); border-radius: 1px; transition: background .06s; }
+  .vu i.on { background: var(--blue); } .vu i.on.hot { background: var(--amber); } .vu i.on.clip { background: var(--red); }
+
+  .chart-wrap { position: relative; }
+  .ph { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--red); transform: translateX(var(--x, 0)); pointer-events: none; }
+
+  /* 変換：フェーダー */
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 28px; background: transparent; cursor: pointer; --lo: 0%; --hi: 0%; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #E3DCC7 0 var(--lo), var(--blue) var(--lo) var(--hi), #E3DCC7 var(--hi) 100%); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #E3DCC7 0 var(--lo), var(--blue) var(--lo) var(--hi), #E3DCC7 var(--hi) 100%); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 24px; margin-top: -9px; border-radius: 3px; border: 1px solid #8F8973; background: linear-gradient(90deg, transparent 5.5px, var(--ink) 5.5px 7.5px, transparent 7.5px), linear-gradient(#FFFFFF, #E9E4D6); box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .15s; }
+  input[type=range]::-moz-range-thumb { width: 12px; height: 22px; border-radius: 3px; border: 1px solid #8F8973; background: linear-gradient(90deg, transparent 5px, var(--ink) 5px 7px, transparent 7px), linear-gradient(#FFFFFF, #E9E4D6); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scaleY(1.08); }
+  .ctl label output { display: inline-block; }
+  .shape-card { margin-top: 12px; }
+  canvas.shape { height: 170px; }
+  .shape-foot { margin: 6px 0 0; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.6em; }
+  .key-gray, .key-blue { white-space: nowrap; }
+  .key-gray::before, .key-blue::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; border-radius: 2px; background: #D9D4C4; }
+  .key-blue::before { background: var(--blue); }
+
+  /* 進み具合（区切りのある計器の目盛り） */
+  .progress { height: 8px; border-radius: 2px; background: var(--blue-soft); }
+  .progress i { background: repeating-linear-gradient(90deg, var(--blue) 0 9px, transparent 9px 11px); transition: width .2s linear; }
+  .progress.done i { background: repeating-linear-gradient(90deg, var(--green) 0 9px, transparent 9px 11px); }
+  .progress.wait i { width: 26% !important; transition: none; }
+  .motion .progress.wait i { animation: scan 1.4s ease-in-out infinite alternate; }
+  @keyframes scan { from { transform: translateX(-10%); } to { transform: translateX(295%); } }
+  .btn.saved, .btn.saved:disabled { background: var(--green); color: #fff; border-color: var(--green); opacity: 1; }
+
+  /* 台本：話している行と話者 */
+  .scene-row { transition: background .25s, box-shadow .25s; }
+  .scene-row.now { background: color-mix(in srgb, var(--c, var(--blue)) 9%, transparent); box-shadow: inset 4px 0 0 var(--c, var(--blue)); }
+  .scene-row .no { border-right: 3px solid var(--c, var(--line)); padding-right: 6px; }
+  .cast-card { transition: box-shadow .25s, transform .25s; }
+  .cast-card.speaking { box-shadow: 0 0 0 2px var(--c); }
+  .line.speaking textarea { border-color: var(--c, var(--blue)); background: color-mix(in srgb, var(--c, var(--blue)) 6%, #fff); }
+  .keynote { margin: 0 0 12px; padding: 10px 14px; border: 1px solid #EBD9AE; border-left: 4px solid var(--amber); background: #FFF6E0; border-radius: 6px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+  .keynote .btn { margin-left: auto; }
+  .mv-card > summary { cursor: pointer; list-style: none; margin-bottom: 0; }
+  .mv-card > summary::-webkit-details-marker { display: none; }
+  .mv-card > summary::after { content: "開く ▾"; font-size: 12px; color: var(--blue); margin-left: 12px; white-space: nowrap; }
+  .mv-card[open] > summary { margin-bottom: 10px; }
+  .mv-card[open] > summary::after { content: "閉じる ▴"; }
+
+  /* キーボードで動かしているときの印 */
+  :where(button, [role=button], summary, a, input[type=range], input[type=checkbox]):focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .drop:focus-visible { outline-offset: 4px; }
+
+  /* 動き（<html class="motion"> のときだけ。動きを減らす設定では最初から全部見える） */
+  .sp .sp-w { display: inline-block; white-space: nowrap; }
+  .sp .sp-o { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .12em; margin-bottom: -.12em; }
+  .sp .sp-i { display: inline-block; }
+  .motion .sp .sp-i { animation: chUp .8s cubic-bezier(.16,.84,.24,1) both; animation-delay: calc(var(--i) * 34ms + 60ms); }
+  @keyframes chUp { from { transform: translateY(110%) rotate(5deg); } }
+  .motion section.step:not(.hidden) .step-head .lead, .motion section.step:not(.hidden) .step-head .pill { animation: fadeUp .7s .2s cubic-bezier(.2,.7,.2,1) both; }
+  .motion main:not(.hidden) { animation: fadeIn .4s both; }
+  .motion .drop { animation: fadeUp .8s .15s cubic-bezier(.2,.7,.2,1) both; }
+  .motion .routes .route { animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: .35s; }
+  .motion .routes .route + .route { animation-delay: .45s; }
+  .motion .stats .stat, .motion .compare .stat { animation: fadeUp .55s cubic-bezier(.2,.7,.2,1) both; }
+  .stats .stat:nth-child(2), .compare .stat:nth-child(2) { animation-delay: 60ms; }
+  .stats .stat:nth-child(3), .compare .stat:nth-child(3) { animation-delay: 120ms; }
+  .stats .stat:nth-child(4), .compare .stat:nth-child(4) { animation-delay: 180ms; }
+  .stats .stat:nth-child(5) { animation-delay: 240ms; } .stats .stat:nth-child(6) { animation-delay: 300ms; }
+  .motion canvas.chart.draw { animation: wipeX 1.1s cubic-bezier(.3,.6,.2,1) both; }
+  .motion canvas.chart.draw-up { animation: wipeUp .9s cubic-bezier(.3,.6,.2,1) both; }
+  @keyframes wipeX { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes wipeUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+  .motion ul.diag li { animation: fadeUp .5s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--n, 0) * 70ms + 200ms); }
+  .motion .ctl output.bump { animation: bump .3s ease-out; }
+  @keyframes bump { 35% { transform: translateY(-3px); color: var(--ink); } }
+  .motion .scene-row.lit { animation: lit .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--n, 0) * 80ms); }
+  @keyframes lit { from { opacity: 0; transform: translateX(-8px); box-shadow: inset 4px 0 0 var(--c, var(--blue)); } }
+  .motion .cast-card.speaking .who .dot { animation: pulse .5s ease-in-out infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.45); } }
+  .motion dialog[open] { animation: dlgIn .28s cubic-bezier(.2,.7,.2,1); }
+  .motion dialog[open]::backdrop { animation: fadeIn .28s; }
+  @keyframes dlgIn { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+  @keyframes fadeIn { from { opacity: 0; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } }
+  .motion .logo svg g rect { transform-box: fill-box; transform-origin: center; animation: logoBar .9s cubic-bezier(.3,.6,.2,1) both; }
+  .motion .logo svg g rect:nth-child(2) { animation-delay: .08s; } .motion .logo svg g rect:nth-child(3) { animation-delay: .16s; } .motion .logo svg g rect:nth-child(4) { animation-delay: .24s; }
+  @keyframes logoBar { from { transform: scaleY(.2); } 60% { transform: scaleY(1.25); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  /* スマホ・指で触る端末は押す部品を44px以上に */
+  @media (max-width: 640px), (pointer: coarse) {
+    .btn, .btn.small, .chip, .seg button, nav.tabs button, .icon-btn, .rail button, select, input[type=text], input[type=password], .cast-card .who input { min-height: 44px; }
+    .line .del { min-width: 44px; min-height: 44px; }
+    .scene-row .tm button { min-height: 44px; min-width: 40px; }
+    .check { min-height: 44px; align-items: center; }
+    .check input { margin-top: 0; width: 20px; height: 20px; }
+    input[type=range] { height: 44px; }
+    .line textarea { min-height: 44px; }
+    .mv-card > summary, .scene-editor summary { min-height: 44px; display: flex; align-items: center; }
+    .suggest button { min-height: 44px; }
+    .linkbtn { min-height: 44px; padding: 0 6px; }
+  }
+  @media (max-width: 640px) {
+    header { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding-top: 16px; }
+    #openSettings { grid-column: 2; grid-row: 1; }
+    .tagline { grid-column: 1 / -1; grid-row: 2; }
+    nav.tabs { grid-column: 1 / -1; }
+    .routes { grid-template-columns: 1fr; }
+    .drop { padding: 32px 14px 26px; }
+    .drop strong { font-size: 19px; }
+    .tts-card > .card-title { flex-wrap: wrap; }
+    .tts-card > .card-title .right { margin-left: 0; width: 100%; justify-content: flex-start; }
+    .rail { gap: 4px; margin: 10px -4px 0; padding: 4px; }
+    .rail button { gap: 4px; font-size: 12px; padding: 0 2px; }
+    .rail button i { display: none; }
+    .wave-foot .vu { order: 5; }
+    .keynote .btn { margin-left: 0; }
+  }
 </style>
 </head>
 <body>
@@ -289,26 +456,41 @@
       こえラボ
     </div>
     <span class="tagline">声を分析して、整えて、書き出す</span>
-    <nav class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="edit">① 分析・変換</button>
-      <button role="tab" aria-selected="false" data-tab="tts">② 台本から声を作る</button>
+    <nav class="tabs" role="tablist" aria-label="使い方を選ぶ">
+      <button role="tab" aria-selected="true" aria-controls="tab-edit" data-tab="edit"><span>① 分析・変換</span><small>APIキー不要</small></button>
+      <button role="tab" aria-selected="false" aria-controls="tab-tts" data-tab="tts"><span>② 台本から声を作る</span><small>Gemini APIキーを使う</small></button>
     </nav>
-    <button class="icon-btn" id="openSettings" title="Gemini APIキーなどの設定">⚙ 設定</button>
+    <button class="icon-btn" id="openSettings" title="Gemini APIキーなどの設定"><span class="kdot" aria-hidden="true"></span>⚙ 設定<span class="vh" id="keyStateText"></span></button>
   </header>
 
   <!-- ============ ① 分析・変換 ============ -->
   <main id="tab-edit">
-    <section class="step">
+    <nav class="rail hidden" id="rail" aria-label="① の手順へ移動">
+      <button type="button" data-sec="secLoad"><i>1</i>入れる</button>
+      <button type="button" data-sec="secAnalyze"><i>2</i>分析</button>
+      <button type="button" data-sec="secConvert"><i>3</i>変換</button>
+      <button type="button" data-sec="secExport" disabled><i>4</i>書き出す</button>
+    </nav>
+    <section class="step" id="secLoad">
       <div class="step-head">
         <span class="pill">STEP 1 <span class="dots"><i class="on"></i><i></i><i></i><i></i></span></span>
-        <h2>声を<span class="u">入れる</span></h2>
+        <h2 data-split>声を<span class="u">入れる</span></h2>
         <p class="lead">音声（mp3・wav・m4a など）も動画（mp4・mov・webm）もOK。ファイルはこのパソコンの中だけで処理します。</p>
       </div>
-      <div id="drop" class="drop" tabindex="0" role="button" aria-label="ファイルを選ぶ">
-        <div class="dots-line" aria-hidden="true"></div>
-        <strong>ここに音声・動画をドラッグ＆ドロップ</strong>
-        <div class="sub">またはクリックしてファイルを選ぶ</div>
-        <button class="btn btn-rec" id="recBtn" type="button">● マイクで録音する</button>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="音声・動画のファイルを選ぶ">
+        <canvas class="scope" aria-hidden="true"></canvas>
+        <div class="drop-body">
+          <strong><span class="only-fine">ここに音声・動画を<span class="nw">ドラッグ＆ドロップ</span></span><span class="only-coarse">音声・動画のファイルを選ぶ</span></strong>
+          <div class="sub"><span class="only-fine">またはクリックしてファイルを選ぶ</span><span class="only-coarse">この枠をタップすると、ファイルの一覧が開きます</span></div>
+          <div class="row drop-btns">
+            <button class="btn btn-rec" id="recBtn" type="button">● マイクで録音する</button>
+            <button class="btn ghost" id="demoBtn" type="button">試し用の音で見てみる</button>
+          </div>
+        </div>
+      </div>
+      <div class="routes" id="routes">
+        <div class="route"><b>手元の音声を分析・変換</b><span>このタブ。APIキーは要りません。音声はパソコンの外に出ません。</span></div>
+        <div class="route"><b>台本から声・解説動画を作る</b><span>② のタブ。Gemini の APIキーが要ります（⚙ 設定で入れる）。</span><button type="button" class="btn ghost small route-go" data-goto="tts">② を開く</button></div>
       </div>
       <input type="file" id="fileInput" accept="audio/*,video/*,.m4a,.mov,.mkv" hidden>
       <div id="fileCard" class="card hidden">
@@ -328,7 +510,7 @@
     <section class="step hidden" id="secAnalyze">
       <div class="step-head">
         <span class="pill">STEP 2 <span class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></span></span>
-        <h2>声を<span class="u">分析</span>する</h2>
+        <h2 data-split>声を<span class="u">分析</span>する</h2>
         <p class="lead">波形をドラッグすると範囲を選べます（その範囲だけ変換・書き出し）。クリックでその位置から再生。</p>
       </div>
       <div class="card">
@@ -337,6 +519,7 @@
         <div class="wave-foot">
           <button class="btn small" id="playOrig">▶ 再生</button>
           <span class="time" id="timeOrig">0:00.0 / 0:00.0</span>
+          <span class="vu" id="vuOrig" aria-hidden="true"></span>
           <button class="btn ghost small hidden" id="clearSel">範囲選択を解除</button>
         </div>
       </div>
@@ -346,7 +529,7 @@
       <div class="grid2">
         <div class="card">
           <div class="card-title"><span class="ic">♪</span>声の高さの動き<span class="right" id="pitchNote"></span></div>
-          <canvas class="chart" id="pitchChart"></canvas>
+          <div class="chart-wrap"><canvas class="chart" id="pitchChart"></canvas><i class="ph hidden" id="pitchHead" aria-hidden="true"></i></div>
         </div>
         <div class="card">
           <div class="card-title"><span class="ic">▥</span>音の成分<span class="right" id="specNote"></span></div>
@@ -373,12 +556,17 @@
     <section class="step hidden" id="secConvert">
       <div class="step-head">
         <span class="pill">STEP 3 <span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span>
-        <h2>声を<span class="u">変換</span>する</h2>
+        <h2 data-split>声を<span class="u">変換</span>する</h2>
         <p class="lead">プリセットを押してから、細かく調整できます。</p>
       </div>
       <div class="card">
         <div class="card-title"><span class="ic">★</span>プリセット</div>
         <div class="chips" id="presets"></div>
+      </div>
+      <div class="card shape-card">
+        <div class="card-title"><span class="ic">≈</span>設定の効き方（目安）<span class="right"><span class="key-gray">灰色＝今の声の成分</span>　<span class="key-blue">青＝設定したあとの目安</span></span></div>
+        <canvas class="chart shape" id="shapeChart" aria-hidden="true"></canvas>
+        <p class="shape-foot" id="shapeFoot" aria-live="polite"></p>
       </div>
       <div class="controls">
         <div class="card">
@@ -430,7 +618,7 @@
     <section class="step hidden" id="secExport">
       <div class="step-head">
         <span class="pill">STEP 4 <span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
-        <h2>聞きくらべて<span class="u">書き出す</span></h2>
+        <h2 data-split>聞きくらべて<span class="u">書き出す</span></h2>
       </div>
       <div class="card">
         <div class="card-title"><span class="ic">〰</span>変換後の波形<span class="right" id="procInfo"></span></div>
@@ -438,6 +626,7 @@
         <div class="wave-foot">
           <button class="btn small" id="playProc">▶ 再生</button>
           <span class="time" id="timeProc">0:00.0 / 0:00.0</span>
+          <span class="vu" id="vuProc" aria-hidden="true"></span>
           <div class="seg" role="group" aria-label="聞きくらべ">
             <button aria-pressed="true" data-ab="proc">変換後</button>
             <button aria-pressed="false" data-ab="orig">元の音</button>
@@ -465,9 +654,10 @@
     <section class="step">
       <div class="step-head">
         <span class="pill">AIボイス</span>
-        <h2>1行ずつ、<span class="u">演技</span>を指示</h2>
+        <h2 data-split>1行ずつ、<span class="u">演技</span>を指示</h2>
         <p class="lead">Gemini の音声合成（TTS）で台本を読み上げます。1人の語りも、2人の掛け合いも1回で生成できます。</p>
       </div>
+      <p class="keynote hidden" id="keyNote" role="note"><b>APIキーがまだ入っていません。</b>台本の入力や見本の読み込みはこのまま試せます。声を作るときは、Gemini の APIキーを入れてください。<button type="button" class="btn ghost small" id="keyNoteBtn">⚙ 設定を開く</button></p>
       <div class="card tts-card">
         <div class="card-title"><span class="ic">▤</span>台本<span class="right tts-switches"><span class="seg" role="group" aria-label="読み上げる言語"><button aria-pressed="true" data-lang="ja">日本語</button><button aria-pressed="false" data-lang="en">English</button><button aria-pressed="false" data-lang="zh">中文</button></span><span class="seg" role="group" aria-label="人数"><button aria-pressed="true" data-mode="1">1人</button><button aria-pressed="false" data-mode="2">2人の掛け合い</button></span></span></div>
         <div class="cast-label">配役</div>
@@ -488,9 +678,55 @@
         </div>
       </div>
     </section>
-    <section class="step" id="myVoiceSec">
+    <section class="step hidden" id="ttsResult">
       <div class="card">
-        <div class="card-title"><span class="ic">🎙</span>自分の声を登録（声の再現）<span class="right">Gemini 3.8 の Voice Replication を使います</span></div>
+        <div class="card-title"><span class="ic">〰</span>生成した声<span class="right" id="ttsInfo"></span></div>
+        <canvas class="wave" id="waveTts"></canvas>
+        <div class="wave-foot">
+          <button class="btn small" id="playTts">▶ 再生</button>
+          <span class="time" id="timeTts">0:00.0 / 0:00.0</span>
+          <span class="vu" id="vuTts" aria-hidden="true"></span>
+          <span class="spacer" style="flex:1"></span>
+          <button class="btn ghost small" id="ttsWav">WAVで保存</button>
+          <button class="btn small" id="ttsToEdit">① 分析・変換で開く</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="ic">▶</span>解説動画にする<span class="right">波形アニメと字幕の動画を作って mp4 で保存</span></div>
+        <div class="vm-grid">
+          <div class="vm-preview" id="vPreviewWrap"><canvas id="vPreview"></canvas></div>
+          <div class="vm-controls">
+            <div class="field"><span>向き</span>
+              <div class="seg" role="group" aria-label="動画の向き"><button aria-pressed="true" data-orient="h">横長 1920×1080</button><button aria-pressed="false" data-orient="v">縦長 1080×1920</button></div>
+            </div>
+            <label class="field"><span>タイトル（任意）</span><input type="text" id="vTitle" placeholder="例：AIが演じる声、聞いてみて"></label>
+            <label class="field"><span>ラベル（左上の青い札）</span><input type="text" id="vTag" value="AIボイス"></label>
+            <label class="check"><input type="checkbox" id="vSub" checked><span>字幕を出す<span class="hint" id="vTiming">行の切り替えは、声の「間」から自動で合わせます</span></span></label>
+            <button type="button" class="btn ghost small hidden" id="vRealign">字幕の位置を合わせ直す</button>
+            <label class="check"><input type="checkbox" id="vAi" checked><span>「AI音声」と表示する<span class="hint">AIで作った声だと見る人に伝わります</span></span></label>
+            <label class="check"><input type="checkbox" id="vMotion" checked><span>動きのある演出を付ける<span class="hint">行ごとに、内容に合った見出し・数字・札・吹き出しなどが動きます</span></span></label>
+            <button type="button" class="btn ghost small hidden" id="vScenesAi">AIで演出を考える</button>
+            <p class="hint" id="vSceneStatus"></p>
+            <div class="vm-wm">
+              <label class="field"><span>透かし（任意）</span><input type="text" id="vWm" placeholder="例：@your_account" autocomplete="off"></label>
+              <label class="field"><span>位置</span>
+                <select id="vWmPos"><option value="br">右下</option><option value="bl">左下</option><option value="tr">右上</option><option value="tl">左上</option><option value="bc">下の中央</option></select>
+              </label>
+            </div>
+            <button class="btn big" id="vMake">動画を作って保存</button>
+            <div class="progress hidden" id="vProg"><i></i></div>
+            <div class="status" id="vStatus"></div>
+          </div>
+        </div>
+        <details class="scene-editor hidden" id="sceneEditor" open>
+          <summary>行ごとの字幕のタイミングと演出（時刻を押すとその行から再生、−／＋で0.1秒ずつ調整）</summary>
+          <div id="sceneList"></div>
+        </details>
+      </div>
+    </section>
+    <section class="step" id="myVoiceSec">
+      <details class="card mv-card" id="mvDetails">
+        <summary class="card-title"><span class="ic">🎙</span>自分の声を登録（声の再現）<span class="right">Gemini 3.8 の Voice Replication を使います</span></summary>
         <p class="lead" style="margin-bottom:12px">自分の声の見本と「同意の読み上げ」を録ると、その声で台本を読めるようになります。<strong>登録できるのは自分の声だけ</strong>です（見本と同意が同じ人の声か、Google が照合します）。</p>
         <div class="mv-grid">
           <div class="mv-step">
@@ -532,52 +768,7 @@
           <div class="card-title" style="margin:16px 0 6px"><span class="ic">★</span>登録した声<span class="right"><button class="btn ghost small" id="mvRefresh">一覧を更新</button></span></div>
           <ul class="mv-voices" id="mvList"></ul>
         </div>
-      </div>
-    </section>
-    <section class="step hidden" id="ttsResult">
-      <div class="card">
-        <div class="card-title"><span class="ic">〰</span>生成した声<span class="right" id="ttsInfo"></span></div>
-        <canvas class="wave" id="waveTts"></canvas>
-        <div class="wave-foot">
-          <button class="btn small" id="playTts">▶ 再生</button>
-          <span class="time" id="timeTts">0:00.0 / 0:00.0</span>
-          <span class="spacer" style="flex:1"></span>
-          <button class="btn ghost small" id="ttsWav">WAVで保存</button>
-          <button class="btn small" id="ttsToEdit">① 分析・変換で開く</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:14px">
-        <div class="card-title"><span class="ic">▶</span>解説動画にする<span class="right">波形アニメと字幕の動画を作って mp4 で保存</span></div>
-        <div class="vm-grid">
-          <div class="vm-preview" id="vPreviewWrap"><canvas id="vPreview"></canvas></div>
-          <div class="vm-controls">
-            <div class="field"><span>向き</span>
-              <div class="seg" role="group" aria-label="動画の向き"><button aria-pressed="true" data-orient="h">横長 1920×1080</button><button aria-pressed="false" data-orient="v">縦長 1080×1920</button></div>
-            </div>
-            <label class="field"><span>タイトル（任意）</span><input type="text" id="vTitle" placeholder="例：AIが演じる声、聞いてみて"></label>
-            <label class="field"><span>ラベル（左上の青い札）</span><input type="text" id="vTag" value="AIボイス"></label>
-            <label class="check"><input type="checkbox" id="vSub" checked><span>字幕を出す<span class="hint" id="vTiming">行の切り替えは、声の「間」から自動で合わせます</span></span></label>
-            <button type="button" class="btn ghost small hidden" id="vRealign">字幕の位置を合わせ直す</button>
-            <label class="check"><input type="checkbox" id="vAi" checked><span>「AI音声」と表示する<span class="hint">AIで作った声だと見る人に伝わります</span></span></label>
-            <label class="check"><input type="checkbox" id="vMotion" checked><span>動きのある演出を付ける<span class="hint">行ごとに、内容に合った見出し・数字・札・吹き出しなどが動きます</span></span></label>
-            <button type="button" class="btn ghost small hidden" id="vScenesAi">AIで演出を考える</button>
-            <p class="hint" id="vSceneStatus"></p>
-            <div class="vm-wm">
-              <label class="field"><span>透かし（任意）</span><input type="text" id="vWm" placeholder="例：@your_account" autocomplete="off"></label>
-              <label class="field"><span>位置</span>
-                <select id="vWmPos"><option value="br">右下</option><option value="bl">左下</option><option value="tr">右上</option><option value="tl">左上</option><option value="bc">下の中央</option></select>
-              </label>
-            </div>
-            <button class="btn big" id="vMake">動画を作って保存</button>
-            <div class="progress hidden" id="vProg"><i></i></div>
-            <div class="status" id="vStatus"></div>
-          </div>
-        </div>
-        <details class="scene-editor hidden" id="sceneEditor" open>
-          <summary>行ごとの字幕のタイミングと演出（時刻を押すとその行から再生、−／＋で0.1秒ずつ調整）</summary>
-          <div id="sceneList"></div>
-        </details>
-      </div>
+      </details>
     </section>
   </main>
 
@@ -602,8 +793,9 @@
   </form>
 </dialog>
 
-<script src="dsp.js?v=20260927q"></script>
-<script src="video.js?v=20260927q"></script>
-<script src="app.js?v=20260927q"></script>
+<script src="motion.js?v=20261115a"></script>
+<script src="dsp.js?v=20261115a"></script>
+<script src="video.js?v=20261115a"></script>
+<script src="app.js?v=20261115a"></script>
 </body>
 </html>
